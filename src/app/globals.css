@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #fafaf9;
+  --foreground: #0c0c0c;
+  --card: #fafaf9;
+  --card-foreground: #0c0c0c;
+  --popover: #fafaf9;
+  --popover-foreground: #0c0c0c;
+  --primary: #0c0c0c;
+  --primary-foreground: #fafaf9;
+  --secondary: #e7e5e4;
+  --secondary-foreground: #0c0c0c;
+  --muted: #e7e5e4;
+  --muted-foreground: #57534e;
+  --accent: #e7e5e4;
+  --accent-foreground: #0c0c0c;
+  --accent-signature: #ea580c;
+  --accent-signature-foreground: #fff7ed;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafaf9;
+  --border: #d6d3d1;
+  --input: #d6d3d1;
+  --ring: #0c0c0c;
+  --radius: 0.5rem;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+  --text-hero: clamp(3rem, 10vw + 1rem, 6rem);
+  --text-display: clamp(1.875rem, 4vw + 1rem, 2.75rem);
+  --text-title: clamp(1.25rem, 2vw + 0.75rem, 1.75rem);
+  --text-body: clamp(0.9375rem, 0.5vw + 0.85rem, 1.0625rem);
+  --text-caption: clamp(0.8125rem, 0.25vw + 0.75rem, 0.875rem);
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafaf9;
+  --card: #111111;
+  --card-foreground: #fafaf9;
+  --popover: #0a0a0a;
+  --popover-foreground: #fafaf9;
+  --primary: #fafaf9;
+  --primary-foreground: #0c0c0c;
+  --secondary: #1c1c1e;
+  --secondary-foreground: #fafaf9;
+  --muted: #1c1c1e;
+  --muted-foreground: #a8a29e;
+  --accent: #1c1c1e;
+  --accent-foreground: #fafaf9;
+  --accent-signature: #f97316;
+  --accent-signature-foreground: #1c1917;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fafaf9;
+  --border: #262626;
+  --input: #262626;
+  --ring: #d6d3d1;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--accent-signature);
+  color: var(--accent-signature-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-stagger > * {
+  animation: hero-in 0.8s var(--ease-out-expo) backwards;
+}
+.hero-stagger > *:nth-child(1) { animation-delay: 0.1s; }
+.hero-stagger > *:nth-child(2) { animation-delay: 0.22s; }
+.hero-stagger > *:nth-child(3) { animation-delay: 0.36s; }
+.hero-stagger > *:nth-child(4) { animation-delay: 0.48s; }
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.7s var(--ease-out-expo) backwards;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
