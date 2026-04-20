@@ -12,6 +12,12 @@ class Topic(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_pinned = models.BooleanField(default=False)
 
+    subscribers = models.ManyToManyField(
+        User,
+        related_name='subscribed_topics',
+        blank=True
+    )
+
     def __str__(self):
         return self.title
 
