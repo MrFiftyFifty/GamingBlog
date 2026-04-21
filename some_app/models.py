@@ -41,7 +41,14 @@ class Post(models.Model):
 
 class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='comments')
+
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        null=True,
+        blank=True
+    )
 
     content = models.TextField()
 
@@ -55,11 +62,7 @@ class Comment(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-    likes = models.ManyToManyField(
-        User,
-        related_name='liked_comments',
-        blank=True
-    )
+    likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)
 
     def __str__(self):
-        return f"{self.author} -> {self.topic} (Comment)"
+        return f"{self.author} -> {self.post} (Comment)"

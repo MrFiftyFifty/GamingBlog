@@ -37,40 +37,6 @@ class TopicSerializer(serializers.ModelSerializer):
         return False
 
 
-class PostSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
-    likes_count = serializers.SerializerMethodField()
-    is_liked = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Post
-        fields = [
-            'id',
-            'author',
-            'topic',
-            'content',
-            'created_at',
-            'likes_count',
-            'is_liked'
-        ]
-        read_only_fields = ['author']
-
-    def get_author(self, obj):
-        return {
-            "id": obj.author.id,
-            "username": obj.author.username
-        }
-
-    def get_likes_count(self, obj):
-        return obj.likes.count()
-
-    def get_is_liked(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.likes.filter(id=request.user.id).exists()
-        return False
-
-
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
@@ -82,7 +48,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'author',
-            'topic',
+            'post',
             'content',
             'parent',
             'created_at',
@@ -100,7 +66,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_replies(self, obj):
         return CommentSerializer(
-            obj.replies.all(),
+            obj.replies.all().order_by('created_at'),
             many=True,
             context=self.context
         ).data
@@ -113,3 +79,47 @@ class CommentSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(id=request.user.id).exists()
         return False
+
+
+class PostSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = [
+            'id',
+            'author',
+            'topic',
+            'content',
+            'created_at',
+            'likes_count',
+            'is_liked',
+            'comments'
+        ]
+        read_only_fields = ['author']
+
+    def get_author(self, obj):
+        return {
+            "id": obj.author.id,
+            "username": obj.author.username
+        }
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False
+
+    def get_comments(self, obj):
+        comments = obj.comments.filter(parent__isnull=True).order_by('created_at')
+        return CommentSerializer(
+            comments,
+            many=True,
+            context=self.context
+        ).data
