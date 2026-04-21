@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Topic, Post, Comment
+from .models import Topic, Post, Comment, Notification
 
 
 class TopicSerializer(serializers.ModelSerializer):
@@ -123,3 +123,17 @@ class PostSerializer(serializers.ModelSerializer):
             many=True,
             context=self.context
         ).data
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    sender = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+    def get_sender(self, obj):
+        return {
+            "id": obj.sender.id,
+            "username": obj.sender.username
+        }

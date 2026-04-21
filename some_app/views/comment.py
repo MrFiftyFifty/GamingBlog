@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
-from ..models import Comment
+from ..models import Comment, Notification
 from ..permissions import IsOwnerOrAdminOrReadOnly
 from ..serializers import CommentSerializer
 
@@ -36,7 +36,16 @@ class CommentViewSet(viewsets.ModelViewSet):
         return qs.order_by('-created_at')
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        comment = serializer.save(author=self.request.user)
+
+        if comment.post and comment.post.author != self.request.user:
+            Notification.objects.create(
+                sender=self.request.user,
+                recipient=comment.post.author,
+                notification_type='comment',
+                post=comment.post,
+                comment=comment
+            )
 
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
@@ -49,6 +58,14 @@ class CommentViewSet(viewsets.ModelViewSet):
             )
 
         comment.likes.add(request.user)
+
+        if comment.author != request.user:
+            Notification.objects.create(
+                sender=request.user,
+                recipient=comment.author,
+                notification_type='like',
+                comment=comment
+            )
 
         return Response({
             "status": "liked",

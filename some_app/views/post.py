@@ -4,9 +4,9 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from ..permissions import IsOwnerOrAdminOrReadOnly
 
-from ..models import Post
+from ..permissions import IsOwnerOrAdminOrReadOnly
+from ..models import Post, Notification
 from ..serializers import PostSerializer
 
 
@@ -25,7 +25,15 @@ class PostViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        post = serializer.save(author=self.request.user)
+
+        if post.topic.author != self.request.user:
+            Notification.objects.create(
+                sender=self.request.user,
+                recipient=post.topic.author,
+                notification_type='post',
+                post=post
+            )
 
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
@@ -38,6 +46,14 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         post.likes.add(request.user)
+
+        if post.author != request.user:
+            Notification.objects.create(
+                sender=request.user,
+                recipient=post.author,
+                notification_type='like',
+                post=post
+            )
 
         return Response({
             "status": "liked",
