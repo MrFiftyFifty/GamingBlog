@@ -1,6 +1,6 @@
 from django.db.models import Count
 
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -17,11 +17,15 @@ class PostViewSet(viewsets.ModelViewSet):
         IsOwnerOrAdminOrReadOnly
     ]
 
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['content', 'author__username']
+    ordering_fields = ['created_at', 'likes_count']
+    ordering = ['-created_at']
+
     def get_queryset(self):
         return (
             Post.objects
             .annotate(likes_count=Count('likes'))
-            .order_by('-likes_count', '-created_at')
         )
 
     def perform_create(self, serializer):

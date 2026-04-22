@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -11,6 +11,11 @@ class TopicViewSet(viewsets.ModelViewSet):
     queryset = Topic.objects.all().order_by('-created_at')
     serializer_class = TopicSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'content']
+    ordering_fields = ['created_at', 'title']
+    ordering = ['-created_at']
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)

@@ -1,6 +1,6 @@
 from django.db.models import Count
 
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -17,23 +17,17 @@ class CommentViewSet(viewsets.ModelViewSet):
         IsOwnerOrAdminOrReadOnly
     ]
 
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['content', 'author__username']
+    ordering_fields = ['created_at', 'likes_count']
+    ordering = ['-created_at']
+
     def get_queryset(self):
-        qs = Comment.objects.filter(parent__isnull=True).annotate(
-            likes_count=Count('likes')
+        return (
+            Comment.objects
+            .filter(parent__isnull=True)
+            .annotate(likes_count=Count('likes'))
         )
-
-        sort = self.request.query_params.get('sort')
-
-        if sort == 'top':
-            return qs.order_by('-likes_count', '-created_at')
-
-        if sort == 'new':
-            return qs.order_by('-created_at')
-
-        if sort == 'hot':
-            return qs.order_by('-likes_count', '-created_at')
-
-        return qs.order_by('-created_at')
 
     def perform_create(self, serializer):
         comment = serializer.save(author=self.request.user)
