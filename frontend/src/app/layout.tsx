@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { Toaster } from "sonner";
+import { Analytics } from "@/components/providers/Analytics";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -25,9 +26,49 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "Игровой форум — обсуждение компьютерных игр",
-  description: "Веб-форум для создания и поддержки игрового сообщества: темы, обсуждения, обмен контентом.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Игровой форум — обсуждение компьютерных игр",
+    template: "%s — Игровой форум",
+  },
+  description:
+    "Русскоязычный форум для геймеров: гайды, обзоры, впечатления и поиск команды. Обсуждения по играм, платформам и жанрам.",
+  keywords: [
+    "игры", "геймеры", "форум", "обзоры", "гайды", "RPG", "шутеры",
+    "MMO", "Steam", "PlayStation", "Xbox", "PC-игры",
+  ],
+  authors: [{ name: "GamingBlog" }],
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    url: SITE_URL,
+    siteName: "Игровой форум",
+    title: "Игровой форум — обсуждение компьютерных игр",
+    description: "Русскоязычный форум для геймеров: гайды, обзоры, впечатления и поиск команды.",
+    images: [{ url: "/images/home/featured.jpg", width: 1200, height: 630, alt: "Игровой форум" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Игровой форум — обсуждение компьютерных игр",
+    description: "Русскоязычный форум для геймеров: гайды, обзоры, впечатления и поиск команды.",
+    images: ["/images/home/featured.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 const themeScript = `
@@ -53,7 +94,7 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased min-h-screen flex flex-col overflow-x-hidden`}>
         <AuthProvider>
-          <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
+          <a href="#main-content" className="skip-to-content">
             Перейти к основному содержимому
           </a>
           <SmoothScroll />
@@ -62,6 +103,7 @@ export default function RootLayout({
           <main id="main-content" className="flex-1" tabIndex={-1}>{children}</main>
           <Footer />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
