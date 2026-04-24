@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Topic, Post, Comment, Notification
+from .models import Topic, Post, Comment, Notification, TopicBan
 
 
 class TopicSerializer(serializers.ModelSerializer):
@@ -137,3 +137,9 @@ class NotificationSerializer(serializers.ModelSerializer):
             "id": obj.sender.id,
             "username": obj.sender.username
         }
+    
+    
+class TopicBanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TopicBan
+        fields = ['id', 'user', 'topic', 'reason', 'created_at']

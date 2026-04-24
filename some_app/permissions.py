@@ -27,12 +27,17 @@ class IsOwnerOrAdminOrReadOnly(BasePermission):
 
 
 class IsTopicModeratorOrAdmin(BasePermission):
-    def has_object_permission(self, request, view, obj):
+    def has_permission(self, request, view):
         if request.user.is_superuser:
             return True
 
-        topic = get_topic(obj)
-        if not topic:
+        topic_id = view.kwargs.get('topic_id')
+        if not topic_id:
+            return False
+
+        try:
+            topic = Topic.objects.get(id=topic_id)
+        except Topic.DoesNotExist:
             return False
 
         return topic.moderators.filter(id=request.user.id).exists()
