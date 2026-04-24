@@ -20,6 +20,14 @@ class TopicViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    def perform_update(self, serializer):
+        self.check_permissions(self.request)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self.check_permissions(self.request)
+        instance.delete()
+
     @action(detail=True, methods=['post'])
     def subscribe(self, request, pk=None):
         topic = self.get_object()
@@ -54,7 +62,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             "subscribers_count": topic.subscribers.count()
         })
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticatedOrReadOnly])
+    @action(detail=False, methods=['get'])
     def my_subscriptions(self, request):
         user = request.user
 

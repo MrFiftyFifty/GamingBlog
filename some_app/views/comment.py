@@ -4,9 +4,14 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import PermissionDenied
 
-from ..models import Comment, Notification
-from ..permissions import IsOwnerOrAdminOrReadOnly
+from ..models import Comment, Notification, TopicBan
+from ..permissions import (
+    IsOwnerOrAdminOrReadOnly,
+    IsTopicModeratorOrAdmin,
+    IsNotBannedInTopic
+)
 from ..serializers import CommentSerializer
 
 
@@ -14,7 +19,9 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [
         IsAuthenticatedOrReadOnly,
-        IsOwnerOrAdminOrReadOnly
+        IsOwnerOrAdminOrReadOnly,
+        IsTopicModeratorOrAdmin,
+        IsNotBannedInTopic
     ]
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -23,14 +30,17 @@ class CommentViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return (
-            Comment.objects
-            .filter(parent__isnull=True)
-            .annotate(likes_count=Count('likes'))
+        return Comment.objects.filter(parent__isnull=True).annotate(
+            likes_count=Count('likes')
         )
 
     def perform_create(self, serializer):
         comment = serializer.save(author=self.request.user)
+
+        topic = comment.post.topic if comment.post else None
+
+        if topic and TopicBan.objects.filter(user=self.request.user, topic=topic).exists():
+            raise PermissionDenied("You are banned in this topic")
 
         if comment.post and comment.post.author != self.request.user:
             Notification.objects.create(
@@ -40,6 +50,16 @@ class CommentViewSet(viewsets.ModelViewSet):
                 post=comment.post,
                 comment=comment
             )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+
+        if instance.post:
+            self.check_permissions(self.request)
+
+    def perform_destroy(self, instance):
+        self.check_permissions(self.request)
+        instance.delete()
 
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):

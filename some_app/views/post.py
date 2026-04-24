@@ -4,9 +4,14 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import PermissionDenied
 
-from ..permissions import IsOwnerOrAdminOrReadOnly
-from ..models import Post, Notification
+from ..permissions import (
+    IsOwnerOrAdminOrReadOnly,
+    IsTopicModeratorOrAdmin,
+    IsNotBannedInTopic
+)
+from ..models import Post, Notification, TopicBan
 from ..serializers import PostSerializer
 
 
@@ -14,7 +19,9 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [
         IsAuthenticatedOrReadOnly,
-        IsOwnerOrAdminOrReadOnly
+        IsOwnerOrAdminOrReadOnly,
+        IsTopicModeratorOrAdmin,
+        IsNotBannedInTopic
     ]
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -23,13 +30,13 @@ class PostViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return (
-            Post.objects
-            .annotate(likes_count=Count('likes'))
-        )
+        return Post.objects.annotate(likes_count=Count('likes'))
 
     def perform_create(self, serializer):
         post = serializer.save(author=self.request.user)
+
+        if TopicBan.objects.filter(user=self.request.user, topic=post.topic).exists():
+            raise PermissionDenied("You are banned in this topic")
 
         if post.topic.author != self.request.user:
             Notification.objects.create(
@@ -38,6 +45,14 @@ class PostViewSet(viewsets.ModelViewSet):
                 notification_type='post',
                 post=post
             )
+
+    def perform_update(self, serializer):
+        self.check_permissions(self.request)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self.check_permissions(self.request)
+        instance.delete()
 
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):

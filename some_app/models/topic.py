@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from .topic_ban import TopicBan
 
 User = settings.AUTH_USER_MODEL
 
@@ -15,6 +16,12 @@ class Topic(models.Model):
     subscribers = models.ManyToManyField(
         User,
         related_name='subscribed_topics',
+        blank=True
+    )
+    
+    moderators = models.ManyToManyField(
+        User,
+        related_name='moderated_topics',
         blank=True
     )
 
