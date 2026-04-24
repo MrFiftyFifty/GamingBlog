@@ -1,0 +1,15 @@
+from django.contrib import admin
+from django.urls import path, include
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from users.views import MyTokenObtainPairView
+from users.views import RegisterView
+from users.views import ProfileView 
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('some_app.urls')),
+    path('api/token/', MyTokenObtainPairView.as_view()),
+    path('api/token/refresh/', TokenRefreshView.as_view()),
+    path('api/register/', RegisterView.as_view(), name='register'),
+    path('api/profile/', ProfileView.as_view(), name='profile'),
+]
