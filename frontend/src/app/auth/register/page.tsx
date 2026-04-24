@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
 import * as authApi from "@/lib/api/auth";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/lib/constants";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -53,38 +54,35 @@ export default function RegisterPage() {
           Создайте аккаунт на форуме
         </p>
 
-        <div className="flex flex-col gap-3 mb-6">
-          <Button
-            variant="outline"
-            className="w-full min-h-[44px]"
-            onClick={() => signIn("steam", { callbackUrl: "/welcome" })}
-          >
-            Войти через Steam
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full min-h-[44px]"
-            onClick={() => signIn("discord", { callbackUrl: "/welcome" })}
-          >
-            Войти через Discord
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full min-h-[44px]"
-            onClick={() => signIn("google", { callbackUrl: "/welcome" })}
-          >
-            Войти через Google
-          </Button>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">или email</span>
-          </div>
-        </div>
+        {(FEATURES.steamOAuth || FEATURES.discordOAuth || FEATURES.googleOAuth) && (
+          <>
+            <div className="flex flex-col gap-3 mb-6">
+              {FEATURES.steamOAuth && (
+                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("steam", { callbackUrl: "/welcome" })}>
+                  Войти через Steam
+                </Button>
+              )}
+              {FEATURES.discordOAuth && (
+                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("discord", { callbackUrl: "/welcome" })}>
+                  Войти через Discord
+                </Button>
+              )}
+              {FEATURES.googleOAuth && (
+                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("google", { callbackUrl: "/welcome" })}>
+                  Войти через Google
+                </Button>
+              )}
+            </div>
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">или email</span>
+              </div>
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>

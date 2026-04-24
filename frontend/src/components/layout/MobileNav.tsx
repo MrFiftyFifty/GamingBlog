@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/lib/constants";
 
 const navLinks = [
-  { href: "/forum", label: "Форумы" },
-  { href: "/search", label: "Поиск" },
-  { href: "/auth/login", label: "Войти" },
-  { href: "/auth/register", label: "Регистрация" },
-];
+  { href: "/forum", label: "Форумы", show: FEATURES.forum },
+  { href: "/search", label: "Поиск", show: FEATURES.search },
+  { href: "/auth/login", label: "Войти", show: true },
+  { href: "/auth/register", label: "Регистрация", show: true },
+].filter((item) => item.show);
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);

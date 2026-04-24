@@ -7,6 +7,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/lib/constants";
 
 function IconSearch({ className }: { className?: string }) {
   return (
@@ -78,14 +79,18 @@ function UserDropdown() {
           </div>
           <nav className="py-1">
             {[
-              { href: "/profile", label: "Профиль" },
-              { href: "/messages", label: "Сообщения" },
-              { href: "/notifications", label: "Уведомления" },
-              { href: "/settings", label: "Настройки" },
-              ...(user.role === "moderator" || user.role === "admin"
-                ? [{ href: "/moderation", label: "Модерация" }]
-                : []),
-            ].map(({ href, label }) => (
+              { href: "/profile", label: "Профиль", show: true },
+              { href: "/messages", label: "Сообщения", show: FEATURES.messages },
+              { href: "/notifications", label: "Уведомления", show: true },
+              { href: "/settings", label: "Настройки", show: FEATURES.userSettings },
+              {
+                href: "/moderation",
+                label: "Модерация",
+                show:
+                  FEATURES.moderation &&
+                  (user.role === "moderator" || user.role === "admin"),
+              },
+            ].filter((item) => item.show).map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
@@ -122,17 +127,23 @@ export function Header() {
           Игровой форум
         </Link>
         <nav className="hidden flex-1 gap-6 md:flex" aria-label="Основная навигация">
-          <Link href="/forum" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
-            Форумы
-          </Link>
-          <Link href="/search" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
-            Поиск
-          </Link>
+          {FEATURES.forum && (
+            <Link href="/forum" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
+              Форумы
+            </Link>
+          )}
+          {FEATURES.search && (
+            <Link href="/search" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
+              Поиск
+            </Link>
+          )}
         </nav>
         <div className="flex items-center gap-1">
-          <Link href="/search" className="rounded-md p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:hidden" aria-label="Поиск">
-            <IconSearch />
-          </Link>
+          {FEATURES.search && (
+            <Link href="/search" className="rounded-md p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:hidden" aria-label="Поиск">
+              <IconSearch />
+            </Link>
+          )}
           <ThemeToggle />
 
           {!isLoading && isAuthenticated && (
