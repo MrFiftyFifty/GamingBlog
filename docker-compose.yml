@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gamingblog-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gamingblog
+      POSTGRES_PASSWORD: gamingblog
+      POSTGRES_DB: gamingblog
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gamingblog -d gamingblog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

@@ -1,6 +1,17 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+type BackendProfile = {
+  id: number;
+  email: string;
+  username: string;
+  avatar: string | null;
+  bio: string;
+  rating: number;
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -13,8 +24,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         try {
-          const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
-          const res = await fetch(`${API_BASE}/api/auth/login`, {
+          const tokenRes = await fetch(`${API_BASE}/api/token/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -22,56 +32,50 @@ export const authOptions: NextAuthOptions = {
               password: credentials.password,
             }),
           });
-          if (!res.ok) return null;
-          const data = await res.json();
+          if (!tokenRes.ok) return null;
+          const { access, refresh } = (await tokenRes.json()) as {
+            access: string;
+            refresh: string;
+          };
+
+          const profileRes = await fetch(`${API_BASE}/api/profile/`, {
+            headers: { Authorization: `Bearer ${access}` },
+          });
+          if (!profileRes.ok) return null;
+          const profile = (await profileRes.json()) as BackendProfile;
+
           return {
-            id: data.user.id,
-            name: data.user.username,
-            email: data.user.email,
-            image: data.user.avatar,
-            role: data.user.role,
-            accessToken: data.token,
+            id: String(profile.id),
+            name: profile.username,
+            email: profile.email,
+            image: profile.avatar,
+            role: "user",
+            accessToken: access,
+            refreshToken: refresh,
           };
         } catch {
           return null;
         }
       },
     }),
-    ...(process.env.STEAM_API_KEY
-      ? [
-          {
-            id: "steam",
-            name: "Steam",
-            type: "oauth" as const,
-            authorization: {
-              url: "https://steamcommunity.com/openid/login",
-              params: { scope: "" },
-            },
-            token: { url: "" },
-            userinfo: { url: "" },
-            clientId: process.env.STEAM_API_KEY,
-            clientSecret: process.env.STEAM_API_KEY,
-            profile(profile: Record<string, string>) {
-              return { id: profile.steamid, name: profile.personaname, image: profile.avatarfull };
-            },
-          },
-        ]
-      : []),
   ],
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as unknown as Record<string, unknown>).role ?? "user";
-        token.accessToken = (user as unknown as Record<string, unknown>).accessToken;
+        const u = user as unknown as Record<string, unknown>;
+        token.role = (u.role as string) ?? "user";
+        token.accessToken = u.accessToken as string;
+        token.refreshToken = u.refreshToken as string;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as Record<string, unknown>).id = token.sub;
-        (session.user as Record<string, unknown>).role = token.role;
-        (session.user as Record<string, unknown>).accessToken = token.accessToken;
+        const s = session.user as Record<string, unknown>;
+        s.id = token.sub;
+        s.role = token.role;
+        s.accessToken = token.accessToken;
       }
       return session;
     },

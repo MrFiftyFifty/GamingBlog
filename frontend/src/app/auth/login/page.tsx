@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/lib/constants";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function LoginPage() {
       toast.error("Неверный email или пароль");
     } else {
       toast.success("Вход выполнен");
-      router.push("/forum");
+      router.push("/");
       router.refresh();
     }
   }
@@ -47,38 +48,35 @@ export default function LoginPage() {
           Войдите в свой аккаунт
         </p>
 
-        <div className="flex flex-col gap-3 mb-6">
-          <Button
-            variant="outline"
-            className="w-full min-h-[44px]"
-            onClick={() => signIn("steam", { callbackUrl: "/forum" })}
-          >
-            Steam
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full min-h-[44px]"
-            onClick={() => signIn("discord", { callbackUrl: "/forum" })}
-          >
-            Discord
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full min-h-[44px]"
-            onClick={() => signIn("google", { callbackUrl: "/forum" })}
-          >
-            Google
-          </Button>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">или email</span>
-          </div>
-        </div>
+        {(FEATURES.steamOAuth || FEATURES.discordOAuth || FEATURES.googleOAuth) && (
+          <>
+            <div className="flex flex-col gap-3 mb-6">
+              {FEATURES.steamOAuth && (
+                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("steam", { callbackUrl: "/" })}>
+                  Steam
+                </Button>
+              )}
+              {FEATURES.discordOAuth && (
+                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("discord", { callbackUrl: "/" })}>
+                  Discord
+                </Button>
+              )}
+              {FEATURES.googleOAuth && (
+                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("google", { callbackUrl: "/" })}>
+                  Google
+                </Button>
+              )}
+            </div>
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">или email</span>
+              </div>
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
@@ -107,11 +105,13 @@ export default function LoginPage() {
               <p className="mt-1 text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
-          <div className="flex justify-end">
-            <Link href="/auth/forgot-password" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">
-              Забыли пароль?
-            </Link>
-          </div>
+          {FEATURES.passwordReset && (
+            <div className="flex justify-end">
+              <Link href="/auth/forgot-password" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">
+                Забыли пароль?
+              </Link>
+            </div>
+          )}
           <Button type="submit" className="w-full min-h-[44px]" disabled={isSubmitting}>
             {isSubmitting ? "Вход..." : "Войти"}
           </Button>
