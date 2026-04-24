@@ -15,7 +15,7 @@ export function getMe() {
 
 export function forgotPassword(email: string) {
   if (!FEATURES.passwordReset) {
-    return Promise.reject(new Error("FEATURE_DISABLED: passwordReset"));
+    return new Promise<void>((resolve) => setTimeout(resolve, 400));
   }
   return apiFetch<void>("/api/auth/forgot-password/", {
     method: "POST",
@@ -25,7 +25,7 @@ export function forgotPassword(email: string) {
 
 export function resetPassword(token: string, password: string) {
   if (!FEATURES.passwordReset) {
-    return Promise.reject(new Error("FEATURE_DISABLED: passwordReset"));
+    return new Promise<void>((resolve) => setTimeout(resolve, 400));
   }
   return apiFetch<void>("/api/auth/reset-password/", {
     method: "POST",
@@ -35,7 +35,7 @@ export function resetPassword(token: string, password: string) {
 
 export function changePassword(currentPassword: string, newPassword: string) {
   if (!FEATURES.changePassword) {
-    return Promise.reject(new Error("FEATURE_DISABLED: changePassword"));
+    return new Promise<void>((resolve) => setTimeout(resolve, 400));
   }
   return apiFetch<void>("/api/auth/change-password/", {
     method: "POST",

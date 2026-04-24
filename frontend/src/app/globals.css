@@ -28,11 +28,43 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
-  --text-hero: clamp(3rem, 10vw + 1rem, 6rem);
-  --text-display: clamp(1.875rem, 4vw + 1rem, 2.75rem);
-  --text-title: clamp(1.25rem, 2vw + 0.75rem, 1.75rem);
-  --text-body: clamp(0.9375rem, 0.5vw + 0.85rem, 1.0625rem);
-  --text-caption: clamp(0.8125rem, 0.25vw + 0.75rem, 0.875rem);
+  --text-scale: 1;
+  --text-hero: calc(clamp(3rem, 10vw + 1rem, 6rem) * var(--text-scale));
+  --text-display: calc(clamp(1.875rem, 4vw + 1rem, 2.75rem) * var(--text-scale));
+  --text-title: calc(clamp(1.25rem, 2vw + 0.75rem, 1.75rem) * var(--text-scale));
+  --text-body: calc(clamp(0.9375rem, 0.5vw + 0.85rem, 1.0625rem) * var(--text-scale));
+  --text-caption: calc(clamp(0.8125rem, 0.25vw + 0.75rem, 0.875rem) * var(--text-scale));
+}
+
+/* Skip-to-content link for screen readers and keyboard navigation */
+.skip-to-content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0.75rem 1rem;
+  background: var(--accent-signature);
+  color: var(--accent-signature-foreground);
+  transform: translateY(-120%);
+  transition: transform 0.2s var(--ease-out-expo);
+  z-index: 100;
+  border-radius: 0 0 var(--radius) 0;
+  font-weight: 600;
+}
+
+.skip-to-content:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* @mention link styling */
+.mention {
+  color: var(--accent-signature);
+  font-weight: 500;
+  text-decoration: none;
+}
+.mention:hover {
+  text-decoration: underline;
 }
 
 .dark {

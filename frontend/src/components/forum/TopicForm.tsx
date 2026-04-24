@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
+import { TagsInput } from "@/components/ui/tags-input";
 import { topicSchema, type TopicFormData } from "@/lib/validations/forum";
 import * as forumApi from "@/lib/api/forum";
 import { cn } from "@/lib/utils";
@@ -77,14 +78,27 @@ export function TopicForm({ slug, topicId, defaultValues }: TopicFormProps) {
       </div>
       <div>
         <label htmlFor="tags" className="block text-sm font-medium text-foreground">
-          Теги (через запятую)
+          Теги
         </label>
-        <Input
-          id="tags"
-          {...register("tags")}
-          placeholder="Marathon, RPG, Экшен"
-          className="mt-2"
-        />
+        <div className="mt-2">
+          <Controller
+            name="tags"
+            control={control}
+            render={({ field }) => {
+              const list = field.value
+                ? String(field.value).split(",").map((t) => t.trim()).filter(Boolean)
+                : [];
+              return (
+                <TagsInput
+                  id="tags"
+                  value={list}
+                  onChange={(tags) => field.onChange(tags.join(","))}
+                  max={5}
+                />
+              );
+            }}
+          />
+        </div>
       </div>
       <div>
         <label htmlFor="content" className="block text-sm font-medium text-foreground">
@@ -99,7 +113,7 @@ export function TopicForm({ slug, topicId, defaultValues }: TopicFormProps) {
                 id="content"
                 value={field.value}
                 onChange={field.onChange}
-                placeholder="Опишите тему. Поддерживается Markdown."
+                placeholder="Опишите тему. Поддерживается Markdown. Упоминайте пользователей через @username."
                 error={!!errors.content}
               />
             )}
@@ -109,7 +123,7 @@ export function TopicForm({ slug, topicId, defaultValues }: TopicFormProps) {
           <p className="mt-1 text-sm text-destructive">{errors.content.message}</p>
         )}
         <p className="mt-1 text-xs text-muted-foreground">
-          Максимум 10 МБ на изображение (JPG, PNG, GIF).
+          Максимум 10 МБ на изображение (JPG, PNG, GIF). Поддерживаются: **жирный**, *курсив*, `код`, списки, ссылки, спойлеры, YouTube/Twitch видео, @упоминания.
         </p>
       </div>
       <div className="flex gap-4">

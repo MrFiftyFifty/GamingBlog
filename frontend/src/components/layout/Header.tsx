@@ -5,9 +5,9 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { FontSizeToggle } from "@/components/ui/font-size-toggle";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { FEATURES } from "@/lib/constants";
 
 function IconSearch({ className }: { className?: string }) {
   return (
@@ -80,16 +80,11 @@ function UserDropdown() {
           <nav className="py-1">
             {[
               { href: "/profile", label: "Профиль", show: true },
-              { href: "/messages", label: "Сообщения", show: FEATURES.messages },
+              { href: "/profile/achievements", label: "Достижения", show: true },
+              { href: "/messages", label: "Сообщения", show: true },
               { href: "/notifications", label: "Уведомления", show: true },
-              { href: "/settings", label: "Настройки", show: FEATURES.userSettings },
-              {
-                href: "/moderation",
-                label: "Модерация",
-                show:
-                  FEATURES.moderation &&
-                  (user.role === "moderator" || user.role === "admin"),
-              },
+              { href: "/settings", label: "Настройки", show: true },
+              { href: "/moderation", label: "Модерация", show: user.role === "moderator" || user.role === "admin" },
             ].filter((item) => item.show).map(({ href, label }) => (
               <Link
                 key={href}
@@ -127,23 +122,18 @@ export function Header() {
           Игровой форум
         </Link>
         <nav className="hidden flex-1 gap-6 md:flex" aria-label="Основная навигация">
-          {FEATURES.forum && (
-            <Link href="/forum" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
-              Форумы
-            </Link>
-          )}
-          {FEATURES.search && (
-            <Link href="/search" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
-              Поиск
-            </Link>
-          )}
+          <Link href="/forum" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
+            Форумы
+          </Link>
+          <Link href="/search" className="text-sm font-medium text-muted-foreground transition-colors duration-200 ease-out-expo hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 py-2">
+            Поиск
+          </Link>
         </nav>
         <div className="flex items-center gap-1">
-          {FEATURES.search && (
-            <Link href="/search" className="rounded-md p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:hidden" aria-label="Поиск">
-              <IconSearch />
-            </Link>
-          )}
+          <Link href="/search" className="rounded-md p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:hidden" aria-label="Поиск">
+            <IconSearch />
+          </Link>
+          <FontSizeToggle />
           <ThemeToggle />
 
           {!isLoading && isAuthenticated && (
