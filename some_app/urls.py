@@ -6,12 +6,14 @@ from .views.post import PostViewSet
 from .views.comment import CommentViewSet
 from .views.notification import NotificationViewSet
 from .views.moderation import ModeratorPanelViewSet
+from .views.upload import UploadViewSet
 
 router = DefaultRouter()
 router.register(r'topics', TopicViewSet, basename='topic')
 router.register(r'posts', PostViewSet, basename='post')
 router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'notifications', NotificationViewSet, basename='notification')
+router.register(r'upload', UploadViewSet, basename='upload')
 
 moderation = ModeratorPanelViewSet.as_view({
     "post": "ban",

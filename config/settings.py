@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -29,6 +30,9 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 SITE_ID = 1
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Application definition
 
@@ -86,6 +90,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+
+MARTOR_ENABLE_CONFIGS = {
+    "IMGUR_CLIENT_ID": "",
+    "IMGUR_API_KEY": "",
+    "IMGUR_API_SECRET": "",
+    "IMGUR_API_REFRESH_TOKEN": "",
+    "lazy_loading": True,
+    "safe_mode": True,
+}
+
+MARTOR_ENABLE_UPLOAD = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+]
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
