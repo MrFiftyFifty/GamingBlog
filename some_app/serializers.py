@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Topic, Post, Comment, Notification, TopicBan, Upload
+from .models import Topic, Post, Comment, Notification, TopicBan, Upload, Profile, SteamGame, UserSteamGame
 
 
 class TopicSerializer(serializers.ModelSerializer):
@@ -143,9 +143,42 @@ class TopicBanSerializer(serializers.ModelSerializer):
     class Meta:
         model = TopicBan
         fields = ['id', 'user', 'topic', 'reason', 'created_at']
-        
+
 
 class UploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Upload
         fields = ['id', 'file', 'created_at']
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = '__all__'
+
+
+class SteamGameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SteamGame
+        fields = [
+            'id',
+            'appid',
+            'name',
+            'icon_url'
+        ]
+
+
+class UserSteamGameSerializer(serializers.ModelSerializer):
+    game = SteamGameSerializer()
+
+    class Meta:
+        model = UserSteamGame
+        fields = [
+            'id',
+            'game',
+            'playtime_forever',
+            'playtime_2weeks',
+            'last_played',
+            'stats',
+            'updated_at'
+        ]

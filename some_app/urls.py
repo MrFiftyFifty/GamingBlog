@@ -7,6 +7,8 @@ from .views.comment import CommentViewSet
 from .views.notification import NotificationViewSet
 from .views.moderation import ModeratorPanelViewSet
 from .views.upload import UploadViewSet
+from .views.profile import ProfileViewSet
+from .views.steam import SteamSyncView, MySteamGamesView
 
 router = DefaultRouter()
 router.register(r'topics', TopicViewSet, basename='topic')
@@ -14,6 +16,7 @@ router.register(r'posts', PostViewSet, basename='post')
 router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'upload', UploadViewSet, basename='upload')
+router.register(r'profiles', ProfileViewSet, basename='profile')
 
 moderation = ModeratorPanelViewSet.as_view({
     "post": "ban",
@@ -24,4 +27,6 @@ moderation = ModeratorPanelViewSet.as_view({
 urlpatterns = [
     path('', include(router.urls)),
     path("topics/<int:topic_id>/moderation/", moderation),
+    path('steam/sync/', SteamSyncView.as_view(), name='steam-sync'),
+    path('steam/games/', MySteamGamesView.as_view(), name='steam-games'),
 ]
