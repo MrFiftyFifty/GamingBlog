@@ -6,23 +6,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import PermissionDenied
 
-from ..permissions import (
-    IsOwnerOrAdminOrReadOnly,
-    IsTopicModeratorOrAdmin,
-    IsNotBannedInTopic
-)
 from ..models import Post, Notification, TopicBan
 from ..serializers import PostSerializer
+from ..services.mentions import create_mention_notifications
 
 
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
-    permission_classes = [
-        IsAuthenticatedOrReadOnly,
-        IsOwnerOrAdminOrReadOnly,
-        IsTopicModeratorOrAdmin,
-        IsNotBannedInTopic
-    ]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['content', 'author__username']
@@ -32,11 +23,36 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Post.objects.annotate(likes_count=Count('likes'))
 
-    def perform_create(self, serializer):
-        post = serializer.save(author=self.request.user)
+    def can_manage_post(self, user, post):
+        if not user or not user.is_authenticated:
+            return False
 
-        if TopicBan.objects.filter(user=self.request.user, topic=post.topic).exists():
+        if user.is_superuser:
+            return True
+
+        if post.author == user:
+            return True
+
+        topic = post.topic
+
+        if topic.author == user:
+            return True
+
+        if topic.moderators.filter(id=user.id).exists():
+            return True
+
+        return False
+
+    def perform_create(self, serializer):
+        topic = serializer.validated_data.get('topic')
+
+        if TopicBan.objects.filter(
+            user=self.request.user,
+            topic=topic
+        ).exists():
             raise PermissionDenied("You are banned in this topic")
+
+        post = serializer.save(author=self.request.user)
 
         if post.topic.author != self.request.user:
             Notification.objects.create(
@@ -46,12 +62,25 @@ class PostViewSet(viewsets.ModelViewSet):
                 post=post
             )
 
+        create_mention_notifications(
+            sender=self.request.user,
+            text=post.content,
+            post=post,
+            topic=post.topic
+        )
+
     def perform_update(self, serializer):
-        self.check_permissions(self.request)
+        post = serializer.instance
+
+        if not self.can_manage_post(self.request.user, post):
+            raise PermissionDenied("You do not have permission to edit this post")
+
         serializer.save()
 
     def perform_destroy(self, instance):
-        self.check_permissions(self.request)
+        if not self.can_manage_post(self.request.user, instance):
+            raise PermissionDenied("You do not have permission to delete this post")
+
         instance.delete()
 
     @action(detail=True, methods=['post'])

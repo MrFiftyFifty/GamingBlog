@@ -13,6 +13,7 @@ from ..permissions import (
     IsNotBannedInTopic
 )
 from ..serializers import CommentSerializer
+from ..services.mentions import create_mention_notifications
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -50,6 +51,14 @@ class CommentViewSet(viewsets.ModelViewSet):
                 post=comment.post,
                 comment=comment
             )
+
+        create_mention_notifications(
+            sender=self.request.user,
+            text=comment.content,
+            post=comment.post,
+            comment=comment,
+            topic=topic
+        )
 
     def perform_update(self, serializer):
         instance = serializer.save()
