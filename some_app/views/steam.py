@@ -1,6 +1,7 @@
-from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from ..models import UserSteamGame
 from ..serializers import UserSteamGameSerializer
@@ -12,19 +13,22 @@ class SteamSyncView(APIView):
 
     def post(self, request):
         result = sync_user_steam_games(request.user)
-        return Response(result)
+
+        return Response({
+            "status": "success",
+            "message": "Steam games synchronized successfully",
+            "synced": result.get("synced", 0)
+        })
 
 
-class MySteamGamesView(APIView):
+class MySteamGamesView(ListAPIView):
+    serializer_class = UserSteamGameSerializer
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        games = (
+    def get_queryset(self):
+        return (
             UserSteamGame.objects
-            .filter(user=request.user)
+            .filter(user=self.request.user)
             .select_related('game')
             .order_by('-playtime_forever')
         )
-
-        serializer = UserSteamGameSerializer(games, many=True)
-        return Response(serializer.data)

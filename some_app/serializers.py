@@ -169,16 +169,53 @@ class SteamGameSerializer(serializers.ModelSerializer):
 
 
 class UserSteamGameSerializer(serializers.ModelSerializer):
-    game = SteamGameSerializer()
+    appid = serializers.IntegerField(source='game.appid', read_only=True)
+    name = serializers.CharField(source='game.name', read_only=True)
+    icon_url = serializers.CharField(source='game.icon_url', read_only=True)
+
+    playtime_minutes = serializers.IntegerField(source='playtime_forever', read_only=True)
+    playtime_hours = serializers.SerializerMethodField()
+    playtime_display = serializers.SerializerMethodField()
+
+    playtime_2weeks_minutes = serializers.IntegerField(source='playtime_2weeks', read_only=True)
+    playtime_2weeks_hours = serializers.SerializerMethodField()
+
+    last_played_display = serializers.SerializerMethodField()
 
     class Meta:
         model = UserSteamGame
         fields = [
             'id',
-            'game',
-            'playtime_forever',
-            'playtime_2weeks',
+            'appid',
+            'name',
+            'icon_url',
+            'playtime_minutes',
+            'playtime_hours',
+            'playtime_display',
+            'playtime_2weeks_minutes',
+            'playtime_2weeks_hours',
             'last_played',
-            'stats',
+            'last_played_display',
             'updated_at'
         ]
+
+    def get_playtime_hours(self, obj):
+        return round(obj.playtime_forever / 60, 2)
+
+    def get_playtime_display(self, obj):
+        hours = obj.playtime_forever // 60
+        minutes = obj.playtime_forever % 60
+
+        if hours == 0:
+            return f"{minutes} мин."
+
+        return f"{hours} ч. {minutes} мин."
+
+    def get_playtime_2weeks_hours(self, obj):
+        return round(obj.playtime_2weeks / 60, 2)
+
+    def get_last_played_display(self, obj):
+        if not obj.last_played:
+            return "Никогда не запускалась"
+
+        return obj.last_played.strftime("%d.%m.%Y %H:%M")
