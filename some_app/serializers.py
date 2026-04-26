@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import Topic, Post, Comment, Notification, TopicBan, Upload, Profile, SteamGame, UserSteamGame
-
+from .models import Topic, Post, Comment, Notification, TopicBan, Upload, Profile, SteamGame, UserSteamGame, PrivateMessage
+from django.contrib.auth import get_user_model
 
 class TopicSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
@@ -219,3 +219,49 @@ class UserSteamGameSerializer(serializers.ModelSerializer):
             return "Никогда не запускалась"
 
         return obj.last_played.strftime("%d.%m.%Y %H:%M")
+    
+
+User = get_user_model()
+
+
+class PrivateMessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    recipient_username = serializers.CharField(source='recipient.username', read_only=True)
+
+    recipient_id = serializers.PrimaryKeyRelatedField(
+        source='recipient',
+        queryset=User.objects.all(),
+        write_only=True
+    )
+
+    is_mine = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PrivateMessage
+        fields = [
+            'id',
+            'sender',
+            'sender_username',
+            'recipient',
+            'recipient_username',
+            'recipient_id',
+            'content',
+            'is_read',
+            'is_mine',
+            'created_at'
+        ]
+        read_only_fields = [
+            'id',
+            'sender',
+            'recipient',
+            'is_read',
+            'created_at'
+        ]
+
+    def get_is_mine(self, obj):
+        request = self.context.get('request')
+
+        if not request:
+            return False
+
+        return obj.sender == request.user

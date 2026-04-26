@@ -9,6 +9,7 @@ from .views.moderation import ModeratorPanelViewSet
 from .views.upload import UploadViewSet
 from .views.profile import ProfileViewSet
 from .views.steam import SteamSyncView, MySteamGamesView
+from .views.private_message import PrivateMessageViewSet
 
 router = DefaultRouter()
 router.register(r'topics', TopicViewSet, basename='topic')
@@ -17,6 +18,7 @@ router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'upload', UploadViewSet, basename='upload')
 router.register(r'profiles', ProfileViewSet, basename='profile')
+router.register(r'private-messages', PrivateMessageViewSet, basename='private-message')
 
 moderation = ModeratorPanelViewSet.as_view({
     "post": "ban",
