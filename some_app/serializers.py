@@ -1,40 +1,104 @@
 from rest_framework import serializers
-from .models import Topic, Post, Comment, Notification, TopicBan, Upload, Profile, SteamGame, UserSteamGame, PrivateMessage
+from .models import Section, Topic, Post, Comment, Notification, TopicBan, Upload, Profile, SteamGame, UserSteamGame, PrivateMessage
 from django.contrib.auth import get_user_model
+from django.utils.text import slugify
 
+class SectionSerializer(serializers.ModelSerializer):
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
+    topics_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Section
+        fields = [
+            'id',
+            'owner',
+            'owner_username',
+            'title',
+            'slug',
+            'description',
+            'topics_count',
+            'created_at'
+        ]
+        read_only_fields = [
+            'id',
+            'owner',
+            'owner_username',
+            'topics_count',
+            'created_at'
+        ]
+
+    def get_topics_count(self, obj):
+        return obj.topics.count()
+
+    def validate_slug(self, value):
+        value = slugify(value)
+
+        if not value:
+            raise serializers.ValidationError("Slug cannot be empty")
+
+        if Section.objects.filter(slug=value).exists():
+            raise serializers.ValidationError("Section with this slug already exists")
+
+        return value
+    
 class TopicSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
+    author_username = serializers.CharField(source='author.username', read_only=True)
     subscribers_count = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
+
+    section = SectionSerializer(read_only=True)
+
+    section_id = serializers.PrimaryKeyRelatedField(
+        source='section',
+        queryset=Section.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+
+    section_slug = serializers.SlugRelatedField(
+        source='section',
+        slug_field='slug',
+        queryset=Section.objects.all(),
+        write_only=True,
+        required=False
+    )
 
     class Meta:
         model = Topic
         fields = [
             'id',
+            'section',
+            'section_id',
+            'section_slug',
             'title',
             'content',
             'author',
-            'created_at',
-            'updated_at',
+            'author_username',
             'is_pinned',
             'subscribers_count',
-            'is_subscribed'
+            'is_subscribed',
+            'created_at',
+            'updated_at'
         ]
 
-    def get_author(self, obj):
-        return {
-            "id": obj.author.id,
-            "username": obj.author.username
-        }
+        read_only_fields = [
+            'id',
+            'author',
+            'created_at',
+            'updated_at'
+        ]
 
     def get_subscribers_count(self, obj):
         return obj.subscribers.count()
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.subscribers.filter(id=request.user.id).exists()
-        return False
+
+        if not request or not request.user.is_authenticated:
+            return False
+
+        return obj.subscribers.filter(id=request.user.id).exists()
 
 
 class CommentSerializer(serializers.ModelSerializer):
