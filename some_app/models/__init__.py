@@ -8,3 +8,4 @@ from .profile import Profile
 from .steam_game import SteamGame, UserSteamGame
 from .private_message import PrivateMessage
 from .section import Section
+from .content_report import ContentReport

@@ -1,7 +1,22 @@
 from rest_framework import serializers
-from .models import Section, Topic, Post, Comment, Notification, TopicBan, Upload, Profile, SteamGame, UserSteamGame, PrivateMessage
+from .models import (
+    Section,
+    Topic,
+    Post,
+    Comment,
+    Notification,
+    TopicBan,
+    Upload,
+    Profile,
+    SteamGame,
+    UserSteamGame,
+    PrivateMessage,
+    ContentReport
+)
+
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
+from django.contrib.contenttypes.models import ContentType
 
 class SectionSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)
@@ -329,3 +344,135 @@ class PrivateMessageSerializer(serializers.ModelSerializer):
             return False
 
         return obj.sender == request.user
+    
+
+class ContentReportSerializer(serializers.ModelSerializer):
+    reporter_username = serializers.CharField(source='reporter.username', read_only=True)
+    moderator_username = serializers.CharField(source='moderator.username', read_only=True)
+
+    target_type = serializers.ChoiceField(
+        choices=['topic', 'post', 'comment'],
+        write_only=True
+    )
+
+    target_id = serializers.IntegerField(write_only=True)
+
+    reported_object_type = serializers.SerializerMethodField()
+    reported_object_id = serializers.SerializerMethodField()
+    reported_object_preview = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ContentReport
+        fields = [
+            'id',
+            'reporter',
+            'reporter_username',
+            'target_type',
+            'target_id',
+            'reported_object_type',
+            'reported_object_id',
+            'reported_object_preview',
+            'reason',
+            'description',
+            'status',
+            'moderator',
+            'moderator_username',
+            'moderator_comment',
+            'created_at',
+            'updated_at',
+            'resolved_at'
+        ]
+
+        read_only_fields = [
+            'id',
+            'reporter',
+            'status',
+            'moderator',
+            'moderator_comment',
+            'created_at',
+            'updated_at',
+            'resolved_at'
+        ]
+
+    def get_model_by_target_type(self, target_type):
+        models_map = {
+            'topic': Topic,
+            'post': Post,
+            'comment': Comment,
+        }
+
+        return models_map.get(target_type)
+
+    def validate(self, attrs):
+        target_type = attrs.get('target_type')
+        target_id = attrs.get('target_id')
+
+        model = self.get_model_by_target_type(target_type)
+
+        if not model:
+            raise serializers.ValidationError({
+                'target_type': 'Invalid target type'
+            })
+
+        try:
+            target_object = model.objects.get(id=target_id)
+        except model.DoesNotExist:
+            raise serializers.ValidationError({
+                'target_id': 'Reported object does not exist'
+            })
+
+        request = self.context.get('request')
+
+        if request and request.user.is_authenticated:
+            content_type = ContentType.objects.get_for_model(model)
+
+            already_exists = ContentReport.objects.filter(
+                reporter=request.user,
+                content_type=content_type,
+                object_id=target_object.id
+            ).exists()
+
+            if already_exists:
+                raise serializers.ValidationError(
+                    'You have already reported this content'
+                )
+
+        attrs['target_object'] = target_object
+        attrs['target_model'] = model
+
+        return attrs
+
+    def create(self, validated_data):
+        target_object = validated_data.pop('target_object')
+        target_model = validated_data.pop('target_model')
+
+        validated_data.pop('target_type')
+        validated_data.pop('target_id')
+
+        content_type = ContentType.objects.get_for_model(target_model)
+
+        return ContentReport.objects.create(
+            content_type=content_type,
+            object_id=target_object.id,
+            **validated_data
+        )
+
+    def get_reported_object_type(self, obj):
+        return obj.content_type.model
+
+    def get_reported_object_id(self, obj):
+        return obj.object_id
+
+    def get_reported_object_preview(self, obj):
+        content_object = obj.content_object
+
+        if not content_object:
+            return None
+
+        if hasattr(content_object, 'title'):
+            return content_object.title
+
+        if hasattr(content_object, 'content'):
+            return content_object.content[:120]
+
+        return str(content_object)
