@@ -11,12 +11,14 @@ from .models import (
     SteamGame,
     UserSteamGame,
     PrivateMessage,
-    ContentReport
+    ContentReport,
+    BannedWord
 )
 
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.contrib.contenttypes.models import ContentType
+from .services.word_blacklist import validate_text_has_no_banned_words
 
 class SectionSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)
@@ -104,6 +106,12 @@ class TopicSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
 
+    def validate_title(self, value):
+        return validate_text_has_no_banned_words(value)
+
+    def validate_content(self, value):
+        return validate_text_has_no_banned_words(value)
+
     def get_subscribers_count(self, obj):
         return obj.subscribers.count()
 
@@ -136,6 +144,9 @@ class CommentSerializer(serializers.ModelSerializer):
             'is_liked'
         ]
         read_only_fields = ['author']
+
+    def validate_content(self, value):
+        return validate_text_has_no_banned_words(value)
 
     def get_author(self, obj):
         return {
@@ -179,6 +190,9 @@ class PostSerializer(serializers.ModelSerializer):
             'comments'
         ]
         read_only_fields = ['author']
+
+    def validate_content(self, value):
+        return validate_text_has_no_banned_words(value)
 
     def get_author(self, obj):
         return {
@@ -476,3 +490,25 @@ class ContentReportSerializer(serializers.ModelSerializer):
             return content_object.content[:120]
 
         return str(content_object)
+    
+class BannedWordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BannedWord
+        fields = [
+            'id',
+            'word',
+            'is_active',
+            'created_at'
+        ]
+        read_only_fields = [
+            'id',
+            'created_at'
+        ]
+
+    def validate_word(self, value):
+        value = value.strip().casefold()
+
+        if not value:
+            raise serializers.ValidationError('Word cannot be empty')
+
+        return value

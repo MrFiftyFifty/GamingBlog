@@ -9,3 +9,4 @@ from .steam_game import SteamGame, UserSteamGame
 from .private_message import PrivateMessage
 from .section import Section
 from .content_report import ContentReport
+from .banned_word import BannedWord

@@ -12,6 +12,7 @@ from .views.steam import SteamSyncView, MySteamGamesView
 from .views.private_message import PrivateMessageViewSet
 from .views.section import SectionListCreateView, SectionTopicsView
 from .views.content_report import ContentReportViewSet
+from .views.banned_word import BannedWordViewSet
 
 
 router = DefaultRouter()
@@ -23,6 +24,7 @@ router.register(r'upload', UploadViewSet, basename='upload')
 router.register(r'profiles', ProfileViewSet, basename='profile')
 router.register(r'private-messages', PrivateMessageViewSet, basename='private-message')
 router.register(r'reports', ContentReportViewSet, basename='report')
+router.register(r'banned-words', BannedWordViewSet, basename='banned-word')
 
 
 moderation = ModeratorPanelViewSet.as_view({
