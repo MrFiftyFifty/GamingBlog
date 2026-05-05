@@ -10,6 +10,7 @@ from ..models import Post, Notification, TopicBan, ModerationLog
 from ..serializers import PostSerializer
 from ..services.mentions import create_mention_notifications
 from ..services.moderation_log import create_moderation_log
+from ..services.reputation import increase_user_reputation, decrease_user_reputation
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -127,6 +128,8 @@ class PostViewSet(viewsets.ModelViewSet):
         post.likes.add(request.user)
 
         if post.author != request.user:
+            increase_user_reputation(post.author)
+
             Notification.objects.create(
                 sender=request.user,
                 recipient=post.author,
@@ -150,6 +153,9 @@ class PostViewSet(viewsets.ModelViewSet):
             )
 
         post.likes.remove(request.user)
+
+        if post.author != request.user:
+            decrease_user_reputation(post.author)
 
         return Response({
             "status": "unliked",

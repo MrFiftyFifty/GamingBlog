@@ -10,6 +10,7 @@ from ..models import Comment, Notification, TopicBan, ModerationLog
 from ..serializers import CommentSerializer
 from ..services.mentions import create_mention_notifications
 from ..services.moderation_log import create_moderation_log
+from ..services.reputation import increase_user_reputation, decrease_user_reputation
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -151,6 +152,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         comment.likes.add(request.user)
 
         if comment.author != request.user:
+            increase_user_reputation(comment.author)
+
             Notification.objects.create(
                 sender=request.user,
                 recipient=comment.author,
@@ -174,6 +177,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             )
 
         comment.likes.remove(request.user)
+
+        if comment.author != request.user:
+            decrease_user_reputation(comment.author)
 
         return Response({
             "status": "unliked",

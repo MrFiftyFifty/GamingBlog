@@ -1,4 +1,9 @@
+from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
+from django.utils.text import slugify
+
 from rest_framework import serializers
+
 from .models import (
     Section,
     Tag,
@@ -16,11 +21,11 @@ from .models import (
     BannedWord,
     ModerationLog
 )
-
-from django.contrib.auth import get_user_model
-from django.utils.text import slugify
-from django.contrib.contenttypes.models import ContentType
 from .services.word_blacklist import validate_text_has_no_banned_words
+
+
+User = get_user_model()
+
 
 class SectionSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)
@@ -55,11 +60,17 @@ class SectionSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Slug cannot be empty")
 
-        if Section.objects.filter(slug=value).exists():
+        queryset = Section.objects.filter(slug=value)
+
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+
+        if queryset.exists():
             raise serializers.ValidationError("Section with this slug already exists")
 
         return value
-    
+
+
 class TagSerializer(serializers.ModelSerializer):
     topics_count = serializers.SerializerMethodField()
 
@@ -94,8 +105,17 @@ class TagSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError('Tag slug cannot be empty')
 
+        queryset = Tag.objects.filter(slug=value)
+
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+
+        if queryset.exists():
+            raise serializers.ValidationError('Tag with this slug already exists')
+
         return value
-    
+
+
 class TopicSerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source='author.username', read_only=True)
     subscribers_count = serializers.SerializerMethodField()
@@ -194,7 +214,14 @@ class CommentSerializer(serializers.ModelSerializer):
             'likes_count',
             'is_liked'
         ]
-        read_only_fields = ['author']
+        read_only_fields = [
+            'id',
+            'author',
+            'created_at',
+            'replies',
+            'likes_count',
+            'is_liked'
+        ]
 
     def validate_content(self, value):
         return validate_text_has_no_banned_words(value)
@@ -217,8 +244,10 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_is_liked(self, obj):
         request = self.context.get('request')
+
         if request and request.user.is_authenticated:
             return obj.likes.filter(id=request.user.id).exists()
+
         return False
 
 
@@ -240,7 +269,14 @@ class PostSerializer(serializers.ModelSerializer):
             'is_liked',
             'comments'
         ]
-        read_only_fields = ['author']
+        read_only_fields = [
+            'id',
+            'author',
+            'created_at',
+            'likes_count',
+            'is_liked',
+            'comments'
+        ]
 
     def validate_content(self, value):
         return validate_text_has_no_banned_words(value)
@@ -256,12 +292,15 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_is_liked(self, obj):
         request = self.context.get('request')
+
         if request and request.user.is_authenticated:
             return obj.likes.filter(id=request.user.id).exists()
+
         return False
 
     def get_comments(self, obj):
         comments = obj.comments.filter(parent__isnull=True).order_by('created_at')
+
         return CommentSerializer(
             comments,
             many=True,
@@ -281,24 +320,65 @@ class NotificationSerializer(serializers.ModelSerializer):
             "id": obj.sender.id,
             "username": obj.sender.username
         }
-    
-    
+
+
 class TopicBanSerializer(serializers.ModelSerializer):
     class Meta:
         model = TopicBan
-        fields = ['id', 'user', 'topic', 'reason', 'created_at']
+        fields = [
+            'id',
+            'user',
+            'topic',
+            'reason',
+            'created_at'
+        ]
 
 
 class UploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Upload
-        fields = ['id', 'file', 'created_at']
+        fields = [
+            'id',
+            'file',
+            'created_at'
+        ]
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    rating_level = serializers.CharField(read_only=True)
+
     class Meta:
         model = Profile
-        fields = '__all__'
+        fields = [
+            'id',
+            'user',
+            'username',
+            'avatar',
+            'status',
+            'games_played',
+            'wins',
+            'losses',
+            'reputation',
+            'rating_level',
+            'is_online',
+            'last_seen',
+            'steam_id',
+            'steam_nickname',
+            'steam_avatar'
+        ]
+        read_only_fields = [
+            'id',
+            'user',
+            'username',
+            'reputation',
+            'rating_level',
+            'is_online',
+            'last_seen',
+            'steam_id',
+            'steam_nickname',
+            'steam_avatar'
+        ]
 
 
 class SteamGameSerializer(serializers.ModelSerializer):
@@ -363,9 +443,6 @@ class UserSteamGameSerializer(serializers.ModelSerializer):
             return "Никогда не запускалась"
 
         return obj.last_played.strftime("%d.%m.%Y %H:%M")
-    
-
-User = get_user_model()
 
 
 class PrivateMessageSerializer(serializers.ModelSerializer):
@@ -409,7 +486,7 @@ class PrivateMessageSerializer(serializers.ModelSerializer):
             return False
 
         return obj.sender == request.user
-    
+
 
 class ContentReportSerializer(serializers.ModelSerializer):
     reporter_username = serializers.CharField(source='reporter.username', read_only=True)
@@ -541,7 +618,8 @@ class ContentReportSerializer(serializers.ModelSerializer):
             return content_object.content[:120]
 
         return str(content_object)
-    
+
+
 class BannedWordSerializer(serializers.ModelSerializer):
     class Meta:
         model = BannedWord
@@ -563,7 +641,8 @@ class BannedWordSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Word cannot be empty')
 
         return value
-    
+
+
 class ModerationLogSerializer(serializers.ModelSerializer):
     moderator_username = serializers.CharField(source='moderator.username', read_only=True)
     target_username = serializers.CharField(source='target_user.username', read_only=True)
