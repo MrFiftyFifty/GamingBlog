@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Section,
+    Tag,
     Topic,
     Post,
     Comment,
@@ -58,6 +59,42 @@ class SectionSerializer(serializers.ModelSerializer):
 
         return value
     
+class TagSerializer(serializers.ModelSerializer):
+    topics_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Tag
+        fields = [
+            'id',
+            'name',
+            'slug',
+            'topics_count',
+            'created_at'
+        ]
+        read_only_fields = [
+            'id',
+            'created_at'
+        ]
+
+    def get_topics_count(self, obj):
+        return obj.topics.count()
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError('Tag name cannot be empty')
+
+        return value
+
+    def validate_slug(self, value):
+        value = value.strip().lower()
+
+        if not value:
+            raise serializers.ValidationError('Tag slug cannot be empty')
+
+        return value
+    
 class TopicSerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source='author.username', read_only=True)
     subscribers_count = serializers.SerializerMethodField()
@@ -81,6 +118,17 @@ class TopicSerializer(serializers.ModelSerializer):
         required=False
     )
 
+    tags = TagSerializer(many=True, read_only=True)
+
+    tag_slugs = serializers.SlugRelatedField(
+        source='tags',
+        slug_field='slug',
+        queryset=Tag.objects.all(),
+        many=True,
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = Topic
         fields = [
@@ -88,6 +136,8 @@ class TopicSerializer(serializers.ModelSerializer):
             'section',
             'section_id',
             'section_slug',
+            'tags',
+            'tag_slugs',
             'title',
             'content',
             'author',

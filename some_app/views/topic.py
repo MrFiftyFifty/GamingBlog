@@ -8,7 +8,6 @@ from ..serializers import TopicSerializer
 
 
 class TopicViewSet(viewsets.ModelViewSet):
-    queryset = Topic.objects.all().order_by('-created_at')
     serializer_class = TopicSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -16,6 +15,21 @@ class TopicViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'title']
     ordering = ['-created_at']
+
+    def get_queryset(self):
+        queryset = (
+            Topic.objects
+            .select_related('section', 'author')
+            .prefetch_related('tags')
+            .order_by('-is_pinned', '-created_at')
+        )
+
+        tag = self.request.query_params.get('tag')
+
+        if tag:
+            queryset = queryset.filter(tags__slug=tag)
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -72,7 +86,13 @@ class TopicViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        topics = Topic.objects.filter(subscribers=user).order_by('-created_at')
+        topics = (
+            Topic.objects
+            .filter(subscribers=user)
+            .select_related('section', 'author')
+            .prefetch_related('tags')
+            .order_by('-created_at')
+        )
 
         page = self.paginate_queryset(topics)
         if page is not None:

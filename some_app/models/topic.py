@@ -16,10 +16,17 @@ class Topic(models.Model):
 
     title = models.CharField(max_length=255)
     content = models.TextField()
+
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='topics'
+    )
+
+    tags = models.ManyToManyField(
+        'Tag',
+        related_name='topics',
+        blank=True
     )
 
     subscribers = models.ManyToManyField(
@@ -34,10 +41,9 @@ class Topic(models.Model):
         blank=True
     )
 
-    is_pinned = models.BooleanField(default=False)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_pinned = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-is_pinned', '-created_at']
