@@ -2,9 +2,11 @@ from rest_framework import viewsets, status, filters
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 
-from ..models import Topic
+from ..models import Topic, ModerationLog
 from ..serializers import TopicSerializer
+from ..services.moderation_log import create_moderation_log
 
 
 class TopicViewSet(viewsets.ModelViewSet):
@@ -20,7 +22,7 @@ class TopicViewSet(viewsets.ModelViewSet):
         queryset = (
             Topic.objects
             .select_related('section', 'author')
-            .prefetch_related('tags')
+            .prefetch_related('tags', 'moderators')
             .order_by('-is_pinned', '-created_at')
         )
 
@@ -31,15 +33,64 @@ class TopicViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def can_manage_topic(self, user, topic):
+        if not user or not user.is_authenticated:
+            return False
+
+        if user.is_superuser or user.is_staff:
+            return True
+
+        if topic.author == user:
+            return True
+
+        if topic.moderators.filter(id=user.id).exists():
+            return True
+
+        return False
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
     def perform_update(self, serializer):
-        self.check_permissions(self.request)
-        serializer.save()
+        topic = serializer.instance
+
+        if not self.can_manage_topic(self.request.user, topic):
+            raise PermissionDenied("You do not have permission to edit this topic")
+
+        updated_topic = serializer.save()
+
+        if self.request.user != updated_topic.author:
+            create_moderation_log(
+                moderator=self.request.user,
+                action=ModerationLog.ACTION_EDIT_TOPIC,
+                target_object=updated_topic,
+                target_user=updated_topic.author,
+                topic=updated_topic,
+                reason='Topic edited by moderator',
+                metadata={
+                    'title': updated_topic.title,
+                    'content': updated_topic.content[:300]
+                }
+            )
 
     def perform_destroy(self, instance):
-        self.check_permissions(self.request)
+        if not self.can_manage_topic(self.request.user, instance):
+            raise PermissionDenied("You do not have permission to delete this topic")
+
+        if self.request.user != instance.author:
+            create_moderation_log(
+                moderator=self.request.user,
+                action=ModerationLog.ACTION_DELETE_TOPIC,
+                target_object=instance,
+                target_user=instance.author,
+                topic=instance,
+                reason='Topic deleted by moderator',
+                metadata={
+                    'title': instance.title,
+                    'content': instance.content[:300]
+                }
+            )
+
         instance.delete()
 
     @action(detail=True, methods=['post'])
@@ -90,7 +141,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             Topic.objects
             .filter(subscribers=user)
             .select_related('section', 'author')
-            .prefetch_related('tags')
+            .prefetch_related('tags', 'moderators')
             .order_by('-created_at')
         )
 

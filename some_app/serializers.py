@@ -13,7 +13,8 @@ from .models import (
     UserSteamGame,
     PrivateMessage,
     ContentReport,
-    BannedWord
+    BannedWord,
+    ModerationLog
 )
 
 from django.contrib.auth import get_user_model
@@ -562,3 +563,70 @@ class BannedWordSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Word cannot be empty')
 
         return value
+    
+class ModerationLogSerializer(serializers.ModelSerializer):
+    moderator_username = serializers.CharField(source='moderator.username', read_only=True)
+    target_username = serializers.CharField(source='target_user.username', read_only=True)
+    topic_title = serializers.CharField(source='topic.title', read_only=True)
+
+    target_object_type = serializers.SerializerMethodField()
+    target_object_id = serializers.SerializerMethodField()
+    target_object_preview = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ModerationLog
+        fields = [
+            'id',
+            'moderator',
+            'moderator_username',
+            'target_user',
+            'target_username',
+            'topic',
+            'topic_title',
+            'action',
+            'target_object_type',
+            'target_object_id',
+            'target_object_preview',
+            'reason',
+            'metadata',
+            'created_at'
+        ]
+        read_only_fields = [
+            'id',
+            'moderator',
+            'moderator_username',
+            'target_user',
+            'target_username',
+            'topic',
+            'topic_title',
+            'action',
+            'target_object_type',
+            'target_object_id',
+            'target_object_preview',
+            'reason',
+            'metadata',
+            'created_at'
+        ]
+
+    def get_target_object_type(self, obj):
+        if not obj.content_type:
+            return None
+
+        return obj.content_type.model
+
+    def get_target_object_id(self, obj):
+        return obj.object_id
+
+    def get_target_object_preview(self, obj):
+        target = obj.content_object
+
+        if not target:
+            return None
+
+        if hasattr(target, 'title'):
+            return target.title
+
+        if hasattr(target, 'content'):
+            return target.content[:120]
+
+        return str(target)

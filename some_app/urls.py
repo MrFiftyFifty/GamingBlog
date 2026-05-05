@@ -14,6 +14,7 @@ from .views.section import SectionListCreateView, SectionTopicsView
 from .views.content_report import ContentReportViewSet
 from .views.banned_word import BannedWordViewSet
 from .views.tag import TagViewSet
+from .views.moderation_log import ModerationLogViewSet
 
 
 router = DefaultRouter()
@@ -27,6 +28,7 @@ router.register(r'private-messages', PrivateMessageViewSet, basename='private-me
 router.register(r'reports', ContentReportViewSet, basename='report')
 router.register(r'banned-words', BannedWordViewSet, basename='banned-word')
 router.register(r'tags', TagViewSet, basename='tag')
+router.register(r'moderation-logs', ModerationLogViewSet, basename='moderation-log')
 
 
 moderation = ModeratorPanelViewSet.as_view({

@@ -6,9 +6,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import PermissionDenied
 
-from ..models import Post, Notification, TopicBan
+from ..models import Post, Notification, TopicBan, ModerationLog
 from ..serializers import PostSerializer
 from ..services.mentions import create_mention_notifications
+from ..services.moderation_log import create_moderation_log
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -21,7 +22,11 @@ class PostViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return Post.objects.annotate(likes_count=Count('likes'))
+        return (
+            Post.objects
+            .select_related('author', 'topic', 'topic__author')
+            .annotate(likes_count=Count('likes'))
+        )
 
     def can_manage_post(self, user, post):
         if not user or not user.is_authenticated:
@@ -75,11 +80,37 @@ class PostViewSet(viewsets.ModelViewSet):
         if not self.can_manage_post(self.request.user, post):
             raise PermissionDenied("You do not have permission to edit this post")
 
-        serializer.save()
+        updated_post = serializer.save()
+
+        if self.request.user != updated_post.author:
+            create_moderation_log(
+                moderator=self.request.user,
+                action=ModerationLog.ACTION_EDIT_POST,
+                target_object=updated_post,
+                target_user=updated_post.author,
+                topic=updated_post.topic,
+                reason='Post edited by moderator',
+                metadata={
+                    'content': updated_post.content[:300]
+                }
+            )
 
     def perform_destroy(self, instance):
         if not self.can_manage_post(self.request.user, instance):
             raise PermissionDenied("You do not have permission to delete this post")
+
+        if self.request.user != instance.author:
+            create_moderation_log(
+                moderator=self.request.user,
+                action=ModerationLog.ACTION_DELETE_POST,
+                target_object=instance,
+                target_user=instance.author,
+                topic=instance.topic,
+                reason='Post deleted by moderator',
+                metadata={
+                    'content': instance.content[:300]
+                }
+            )
 
         instance.delete()
 
