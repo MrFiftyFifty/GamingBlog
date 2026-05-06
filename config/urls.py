@@ -1,5 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
+from users.password_reset import (
+    PasswordResetRequestAPIView,
+    PasswordResetConfirmAPIView,
+)
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -23,6 +27,8 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/register/', RegisterView.as_view(), name='register'),
     path('api/profile/', ProfileView.as_view(), name='profile'),
+    path('api/password-reset/', PasswordResetRequestAPIView.as_view(), name='password-reset'),
+    path('api/password-reset-confirm/', PasswordResetConfirmAPIView.as_view(), name='password-reset-confirm'),
 
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
