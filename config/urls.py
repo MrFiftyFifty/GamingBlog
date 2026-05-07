@@ -17,6 +17,11 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
+from users.social_accounts import (
+    SocialAccountListAPIView,
+    SocialAccountDisconnectAPIView,
+)
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -35,6 +40,8 @@ urlpatterns = [
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
     path('accounts/', include('allauth.urls')),
+    path('api/social-accounts/', SocialAccountListAPIView.as_view(), name='social-accounts'),
+    path('api/social-accounts/<int:pk>/', SocialAccountDisconnectAPIView.as_view(), name='social-account-disconnect'),
 ]
 
 
