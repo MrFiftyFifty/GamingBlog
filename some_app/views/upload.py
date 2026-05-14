@@ -12,6 +12,7 @@ class UploadViewSet(viewsets.ModelViewSet):
     queryset = Upload.objects.all()
     serializer_class = UploadSerializer
     permission_classes = [IsAuthenticated]
+    throttle_scope = 'upload'
 
     def create(self, request, *args, **kwargs):
         file = request.FILES.get('file')

@@ -24,6 +24,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
 class PasswordResetRequestAPIView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = 'password_reset'
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -141,6 +142,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class PasswordResetConfirmAPIView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = 'password_reset'
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)

@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
 from django.test import override_settings
 
 from rest_framework import status
@@ -16,6 +17,8 @@ User = get_user_model()
 )
 class PasswordResetAPITestCase(APITestCase):
     def setUp(self):
+        cache.clear()
+
         self.email = 'reset_user@example.com'
         self.old_password = 'OldPassword123'
         self.new_password = 'NewStrongPassword12345'
@@ -27,6 +30,9 @@ class PasswordResetAPITestCase(APITestCase):
         )
 
         mail.outbox = []
+
+    def tearDown(self):
+        cache.clear()
 
     def test_password_reset_request_for_existing_email_returns_200_and_sends_email(self):
         payload = {

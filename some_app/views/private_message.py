@@ -12,6 +12,7 @@ from ..serializers import PrivateMessageSerializer
 class PrivateMessageViewSet(viewsets.ModelViewSet):
     serializer_class = PrivateMessageSerializer
     permission_classes = [IsAuthenticated]
+    throttle_scope = 'messages'
 
     def get_queryset(self):
         return PrivateMessage.objects.filter(
