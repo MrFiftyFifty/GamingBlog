@@ -12,6 +12,9 @@ class Notification(models.Model):
         ('comment', 'Comment'),
         ('reply', 'Reply'),
         ('post', 'New Post'),
+        ('ban', 'Ban'),
+        ('unban', 'Unban'),
+        ('mention', 'Mention'),
     )
 
     sender = models.ForeignKey(

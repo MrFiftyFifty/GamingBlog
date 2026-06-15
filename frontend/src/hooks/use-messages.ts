@@ -1,15 +1,21 @@
 import useSWR from "swr";
 import * as messagesApi from "@/lib/api/messages";
+import { useAuth } from "@/hooks/useAuth";
 
 export function useConversations() {
-  return useSWR("messages/conversations", () =>
-    messagesApi.getConversations()
+  const { user } = useAuth();
+  return useSWR(
+    user?.id ? ["messages/conversations", user.id] : null,
+    () => messagesApi.getConversations(user!.id)
   );
 }
 
 export function useMessages(conversationId: string | null, page?: number) {
+  const { user } = useAuth();
   return useSWR(
-    conversationId ? ["messages", conversationId, page] : null,
-    () => messagesApi.getMessages(conversationId!, page)
+    user?.id && conversationId
+      ? ["messages", conversationId, user.id, page]
+      : null,
+    () => messagesApi.getMessages(conversationId!, user!.id, page)
   );
 }

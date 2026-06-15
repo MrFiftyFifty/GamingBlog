@@ -8,9 +8,9 @@ export function usePublicUser(username: string | null) {
   );
 }
 
-export function useUserTopics(username: string | null, page?: number) {
+export function useUserTopics(username: string | null) {
   return useSWR(
-    username ? ["user/topics", username, page] : null,
-    () => userApi.getUserTopics(username!, page)
+    username ? ["user/topics", username] : null,
+    () => userApi.getUserTopics(username!)
   );
 }

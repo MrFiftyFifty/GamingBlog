@@ -34,22 +34,30 @@ export const FONT_SIZES: { value: FontSize; label: string; scale: number }[] = [
 ];
 
 export const FEATURES = {
-  forum: false,
-  messages: false,
-  moderation: false,
-  search: false,
-  userProfilesByUsername: false,
-  userSettings: false,
-  avatarUpload: false,
-  passwordReset: false,
-  changePassword: false,
-  notificationsUnreadCount: false,
-  notificationsMarkRead: false,
+  forum: true,
+  messages: true,
+  moderation: true,
+  search: true,
+  userProfilesByUsername: true,
+  userSettings: true,
+  avatarUpload: true,
+  passwordReset: true,
+  changePassword: true,
+  notificationsUnreadCount: true,
+  notificationsMarkRead: true,
   topicPin: false,
   topicClose: false,
-  postReport: false,
+  postReport: true,
   postReactions: false,
-  steamOAuth: false,
+  steamOAuth:
+    typeof process !== "undefined" &&
+    (process.env.NEXT_PUBLIC_STEAM_OAUTH === "true" ||
+      (process.env.NODE_ENV === "development" &&
+        process.env.NEXT_PUBLIC_STEAM_OAUTH !== "false")),
   discordOAuth: false,
-  googleOAuth: false,
+  googleOAuth:
+    typeof process !== "undefined" &&
+    (process.env.NEXT_PUBLIC_GOOGLE_OAUTH === "true" ||
+      (process.env.NODE_ENV === "development" &&
+        process.env.NEXT_PUBLIC_GOOGLE_OAUTH !== "false")),
 } as const;

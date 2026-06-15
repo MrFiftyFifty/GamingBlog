@@ -6,10 +6,14 @@ import {
   mockTopic,
   mockSearchForum,
 } from "@/lib/mocks/api-mocks";
+import {
+  normalizePaginatedTopics,
+  normalizePost,
+  normalizeSections,
+  normalizeTopic,
+} from "./normalize";
 import type {
-  Section,
   Topic,
-  TopicListItem,
   Post,
   PaginatedResponse,
   SearchResult,
@@ -19,34 +23,37 @@ import type {
   ReportRequest,
 } from "./types";
 
-export function getSections() {
+export async function getSections() {
   if (!FEATURES.forum) return mockSections();
-  return apiFetch<Section[]>("/api/forum/sections/");
+  const raw = await apiFetch<unknown>("/api/forum/sections/");
+  return normalizeSections(raw);
 }
 
-export function getTopics(
+export async function getTopics(
   sectionSlug: string,
   params?: { page?: number; sort?: string; tag?: string }
 ) {
   if (!FEATURES.forum) return mockTopics(sectionSlug);
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
-  if (params?.sort) query.set("sort", params.sort);
+  if (params?.sort) query.set("ordering", params.sort === "popular" ? "-created_at" : "-created_at");
   if (params?.tag) query.set("tag", params.tag);
   const qs = query.toString();
-  return apiFetch<PaginatedResponse<TopicListItem>>(
+  const raw = await apiFetch<unknown>(
     `/api/forum/sections/${sectionSlug}/topics/${qs ? `?${qs}` : ""}`
   );
+  return normalizePaginatedTopics(raw as Record<string, unknown>);
 }
 
-export function getTopic(sectionSlug: string, topicId: string) {
+export async function getTopic(sectionSlug: string, topicId: string) {
   if (!FEATURES.forum) return mockTopic(sectionSlug, topicId);
-  return apiFetch<Topic>(
+  const raw = await apiFetch<Record<string, unknown>>(
     `/api/forum/sections/${sectionSlug}/topics/${topicId}/`
   );
+  return normalizeTopic(raw);
 }
 
-export function createTopic(sectionSlug: string, data: CreateTopicRequest) {
+export async function createTopic(sectionSlug: string, data: CreateTopicRequest) {
   if (!FEATURES.forum) {
     return Promise.resolve({
       id: String(Date.now()),
@@ -62,13 +69,24 @@ export function createTopic(sectionSlug: string, data: CreateTopicRequest) {
       posts: [],
     } as Topic);
   }
-  return apiFetch<Topic>(`/api/forum/sections/${sectionSlug}/topics/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  const payload: Record<string, unknown> = {
+    title: data.title,
+    content: data.content,
+  };
+  if (data.tags?.length) {
+    payload.tag_slugs = data.tags;
+  }
+  const raw = await apiFetch<Record<string, unknown>>(
+    `/api/forum/sections/${sectionSlug}/topics/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+  return normalizeTopic(raw);
 }
 
-export function updateTopic(
+export async function updateTopic(
   sectionSlug: string,
   topicId: string,
   data: UpdateTopicRequest
@@ -76,13 +94,14 @@ export function updateTopic(
   if (!FEATURES.forum) {
     return Promise.resolve({} as Topic);
   }
-  return apiFetch<Topic>(
+  const raw = await apiFetch<Record<string, unknown>>(
     `/api/forum/sections/${sectionSlug}/topics/${topicId}/`,
     { method: "PATCH", body: JSON.stringify(data) }
   );
+  return normalizeTopic(raw);
 }
 
-export function deleteTopic(sectionSlug: string, topicId: string) {
+export async function deleteTopic(sectionSlug: string, topicId: string) {
   if (!FEATURES.forum) return Promise.resolve();
   return apiFetch<void>(
     `/api/forum/sections/${sectionSlug}/topics/${topicId}/`,
@@ -90,7 +109,7 @@ export function deleteTopic(sectionSlug: string, topicId: string) {
   );
 }
 
-export function createReply(
+export async function createReply(
   sectionSlug: string,
   topicId: string,
   data: CreateReplyRequest
@@ -107,25 +126,26 @@ export function createReply(
       likedByMe: false,
     } as Post);
   }
-  return apiFetch<Post>(
+  const raw = await apiFetch<Record<string, unknown>>(
     `/api/forum/sections/${sectionSlug}/topics/${topicId}/replies/`,
-    { method: "POST", body: JSON.stringify(data) }
+    { method: "POST", body: JSON.stringify({ content: data.content }) }
   );
+  return normalizePost(raw);
 }
 
-export function likePost(postId: string) {
-  return apiFetch<{ likes: number }>(`/posts/${postId}/like/`, {
+export async function likePost(postId: string) {
+  return apiFetch<{ likes: number }>(`/api/posts/${postId}/like/`, {
     method: "POST",
   }).catch(() => ({ likes: 1 }));
 }
 
-export function unlikePost(postId: string) {
-  return apiFetch<{ likes: number }>(`/posts/${postId}/unlike/`, {
+export async function unlikePost(postId: string) {
+  return apiFetch<{ likes: number }>(`/api/posts/${postId}/unlike/`, {
     method: "POST",
   }).catch(() => ({ likes: 0 }));
 }
 
-export function reactToPost(postId: string, reaction: string) {
+export async function reactToPost(postId: string, reaction: string) {
   if (!FEATURES.postReactions) {
     return Promise.resolve({ reaction, count: 1 });
   }
@@ -135,35 +155,49 @@ export function reactToPost(postId: string, reaction: string) {
   );
 }
 
-export function reportPost(postId: string, data: ReportRequest) {
+const REPORT_REASON_MAP: Record<string, string> = {
+  Спам: "spam",
+  Оскорбления: "insult",
+  "Нецензурная лексика": "insult",
+  Реклама: "spam",
+  "Нарушение правил": "other",
+  Другое: "other",
+};
+
+export async function reportPost(postId: string, data: ReportRequest) {
   if (!FEATURES.postReport) return Promise.resolve();
-  return apiFetch<void>(`/api/forum/posts/${postId}/report/`, {
+  return apiFetch<void>(`/api/reports/`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      target_type: "post",
+      target_id: Number(postId),
+      reason: REPORT_REASON_MAP[data.reason] ?? "other",
+      description: data.description ?? "",
+    }),
   });
 }
 
-export function searchForum(query: string, page?: number) {
+export async function searchForum(query: string, page?: number) {
   if (!FEATURES.search) return mockSearchForum(query);
-  const params = new URLSearchParams({ q: query });
+  const params = new URLSearchParams({ search: query });
   if (page) params.set("page", String(page));
   return apiFetch<PaginatedResponse<SearchResult>>(
-    `/api/forum/search/?${params}`
+    `/api/topics/?${params}`
   );
 }
 
-export function pinTopic(sectionSlug: string, topicId: string) {
+export async function pinTopic(sectionSlug: string, topicId: string) {
   if (!FEATURES.topicPin) return Promise.resolve();
   return apiFetch<void>(
-    `/api/forum/sections/${sectionSlug}/topics/${topicId}/pin/`,
-    { method: "POST" }
+    `/api/forum/sections/${sectionSlug}/topics/${topicId}/`,
+    { method: "PATCH", body: JSON.stringify({ is_pinned: true }) }
   );
 }
 
-export function closeTopic(sectionSlug: string, topicId: string) {
+export async function closeTopic(sectionSlug: string, topicId: string) {
   if (!FEATURES.topicClose) return Promise.resolve();
   return apiFetch<void>(
-    `/api/forum/sections/${sectionSlug}/topics/${topicId}/close/`,
-    { method: "POST" }
+    `/api/forum/sections/${sectionSlug}/topics/${topicId}/`,
+    { method: "PATCH", body: JSON.stringify({ is_closed: true }) }
   );
 }

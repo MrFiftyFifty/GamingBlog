@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/lib/zod-resolver";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
 import * as authApi from "@/lib/api/auth";
 import { cn } from "@/lib/utils";
 import { FEATURES } from "@/lib/constants";
+import * as socialApi from "@/lib/api/social";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -58,7 +59,14 @@ export default function RegisterPage() {
           <>
             <div className="flex flex-col gap-3 mb-6">
               {FEATURES.steamOAuth && (
-                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("steam", { callbackUrl: "/welcome" })}>
+                <Button
+                  variant="outline"
+                  className="w-full min-h-[44px]"
+                  type="button"
+                  onClick={() => {
+                    window.location.href = socialApi.steamLoginUrl();
+                  }}
+                >
                   Войти через Steam
                 </Button>
               )}
@@ -68,7 +76,14 @@ export default function RegisterPage() {
                 </Button>
               )}
               {FEATURES.googleOAuth && (
-                <Button variant="outline" className="w-full min-h-[44px]" onClick={() => signIn("google", { callbackUrl: "/welcome" })}>
+                <Button
+                  variant="outline"
+                  className="w-full min-h-[44px]"
+                  type="button"
+                  onClick={() => {
+                    window.location.href = socialApi.googleLoginUrl();
+                  }}
+                >
                   Войти через Google
                 </Button>
               )}

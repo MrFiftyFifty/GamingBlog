@@ -32,11 +32,26 @@ source .venv/Scripts/activate   # Windows (Git Bash)
 pip install -r requirements.txt
 cp .env.example .env
 python manage.py migrate
-python manage.py createsuperuser
+python manage.py seed_forum
+python manage.py seed_demo_user
 python manage.py runserver 0.0.0.0:8000
 ```
 
 Бэк слушает на `http://localhost:8000`. Django admin: `http://localhost:8000/admin/`.
+
+### Демо-пользователь
+
+После `seed_demo_user` (создаётся автоматически в шагах выше):
+
+| Поле | Значение |
+|------|----------|
+| Email | `demo@gamingblog.local` |
+| Username | `demo` |
+| Пароль | `Demo12345!` |
+
+Вход на фронте: `http://localhost:3000/auth/login`, профиль: `http://localhost:3000/user/demo`.
+
+Если PostgreSQL недоступен, в `backend/.env` задайте `USE_SQLITE=true` (локальная БД `backend/db.sqlite3`).
 
 ### 3. Frontend
 
@@ -55,25 +70,24 @@ npm run dev
 
 ## Что работает сейчас
 
-- ✅ Регистрация (`/auth/register`)
-- ✅ Логин (`/auth/login`)
-- ✅ Профиль авторизованного юзера (`/profile`)
-- ✅ Уведомления (`/notifications`) — без счётчика непрочитанных
+После интеграции ветки `backend` (код коллеги в каталоге `backend/`):
+
+- ✅ Регистрация и логин (JWT, `/api/register/`, `/api/token/`)
+- ✅ Профиль (`/api/profile/`, `/profile`)
+- ✅ Разделы форума и список тем (`/api/forum/sections/`, темы по разделу)
+- ✅ Просмотр темы и ответы (bridge API под фронт)
+- ✅ Уведомления (список, счётчик, прочитано)
+- ✅ Сброс пароля (API; нужен SMTP в `.env`)
+- ✅ OpenAPI: `http://localhost:8000/api/docs/`
 - ✅ Django admin
 
-## Что пока отключено (feature-flags)
+## Что пока на моках (feature-flags = false)
 
-Эндпоинтов на бэке ещё нет. Соответствующие роуты фронта возвращают 404, ссылки скрыты в меню. См. `docs/BACKEND_TODO.md`.
+См. `frontend/src/lib/constants.ts` и `docs/BACKEND_TODO.md`.
 
-- ❌ Форум (ждём модель `Section` на бэке)
-- ❌ Личные сообщения
-- ❌ Модерация
-- ❌ Поиск
-- ❌ Публичные профили по `username`
-- ❌ Настройки пользователя, загрузка аватара
-- ❌ Сброс/смена пароля
-- ❌ Счётчик непрочитанных уведомлений, "пометить всё прочитанным"
-- ❌ Закрепить/закрыть тему, пожаловаться на пост
+- ⚠️ Личные сообщения и модерация подключены к API коллеги через адаптеры (`private-messages`, `reports`, `moderation-logs`)
+- ❌ Публичные профили по `username`, настройки, аватар
+- ❌ OAuth Steam / Discord / Google (нужны ключи в `.env`)
 
 ## Структура API
 
@@ -104,3 +118,23 @@ git push origin integration
 ```
 
 Открой PR `integration → master`, дай коллеге ревью, потом мерджи.
+
+## GitHub Pages (демо фронтенда)
+
+Workflow: `.github/workflows/deploy.yml` (по образцу [ark-task](https://github.com/MrFiftyFifty/ark-task)).
+
+**Один раз в репозитории:** Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+
+После push в `main` или `integration` сайт будет доступен по адресу:
+
+**https://mrfiftyfifty.github.io/GamingBlog/**
+
+Локальная проверка статической сборки:
+
+```bash
+cd frontend
+npm run build:pages
+npm run restore:pages   # вернуть middleware и NextAuth API для dev
+```
+
+Ограничения GitHub Pages: только статический экспорт Next.js (без Django и без NextAuth API). На Pages работают главная, форум и демо-страницы с mock-данными; вход и запись к бэкенду — только при локальном запуске или при отдельном хостинге API.

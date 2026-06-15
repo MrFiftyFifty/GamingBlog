@@ -16,6 +16,12 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (PROTECTED_PATHS.some((re) => re.test(pathname))) {
+    if (
+      process.env.NODE_ENV === "development" &&
+      process.env.SKIP_AUTH_FOR_SCREENSHOTS === "true"
+    ) {
+      return NextResponse.next();
+    }
     const token = await getToken({ req });
     if (!token) {
       const loginUrl = new URL("/auth/login", req.url);

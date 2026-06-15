@@ -4,10 +4,15 @@ import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { TopicForm } from "@/components/forum/TopicForm";
 import { SECTION_NAMES } from "@/lib/constants";
+import { getSectionSlugParams } from "@/lib/static-params";
 
 export const metadata: Metadata = {
   title: "Создать тему — Игровой форум",
 };
+
+export function generateStaticParams() {
+  return getSectionSlugParams();
+}
 
 export default function NewTopicPage({
   params,

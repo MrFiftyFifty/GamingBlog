@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { TopicForm } from "@/components/forum/TopicForm";
 import { SECTION_NAMES } from "@/lib/constants";
 import { MOCK_TOPICS } from "@/lib/mock-data";
+import { getTopicRouteParams } from "@/lib/static-params";
 
 export const metadata: Metadata = {
   title: "Редактировать тему — Игровой форум",
 };
+
+export function generateStaticParams() {
+  return getTopicRouteParams();
+}
 
 export default function EditTopicPage({
   params,

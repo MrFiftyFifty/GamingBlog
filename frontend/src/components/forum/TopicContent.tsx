@@ -18,11 +18,12 @@ export function TopicContent({ sectionSlug, topicId, posts }: TopicContentProps)
   const [reportPostId, setReportPostId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
 
-  const handleLike = useCallback(async (postId: string) => {
+  const handleReact = useCallback(async (postId: string, reaction: string | null) => {
+    if (!reaction) return;
     try {
-      await forumApi.likePost(postId);
+      await forumApi.reactToPost(postId, reaction);
     } catch {
-      toast.error("Не удалось поставить лайк");
+      toast.error("Не удалось поставить реакцию");
     }
   }, []);
 
@@ -49,7 +50,7 @@ export function TopicContent({ sectionSlug, topicId, posts }: TopicContentProps)
                 content={post.content}
                 createdAt={post.createdAt}
                 isTopicAuthor={post.isTopicAuthor}
-                onLike={handleLike}
+                onReact={handleReact}
                 onQuote={handleQuote}
                 onReport={setReportPostId}
               />

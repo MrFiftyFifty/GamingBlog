@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
+import { useModActions } from "@/hooks/use-moderation";
 
 const ACTION_LABELS: Record<string, string> = {
   delete_post: "Удалил сообщение",
@@ -16,20 +17,14 @@ const ACTION_LABELS: Record<string, string> = {
   dismiss_complaint: "Отклонил жалобу",
 };
 
-const MOCK_ACTIONS = [
-  { id: "1", moderator: "Admin", action: "ban_user", targetUser: "SpamBot99", reason: "Систематический спам", createdAt: "15 мар, 16:00" },
-  { id: "2", moderator: "Moderator1", action: "warn_user", targetUser: "BadUser123", reason: "Оскорбления", createdAt: "15 мар, 14:45" },
-  { id: "3", moderator: "Moderator1", action: "delete_post", targetUser: "TrollAccount", reason: "Нарушение правил форума", createdAt: "14 мар, 22:30" },
-  { id: "4", moderator: "Admin", action: "pin_topic", targetUser: null, reason: "Важная тема для сообщества", createdAt: "14 мар, 10:00" },
-  { id: "5", moderator: "Moderator1", action: "dismiss_complaint", targetUser: null, reason: "Ложная жалоба", createdAt: "13 мар, 18:00" },
-];
-
 const PAGE_SIZE = 20;
 
 export default function ModActionLogPage() {
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(MOCK_ACTIONS.length / PAGE_SIZE));
-  const paged = MOCK_ACTIONS.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { data, isLoading } = useModActions(page);
+  const actions = data?.results ?? [];
+  const totalPages = Math.max(1, Math.ceil((data?.count ?? actions.length) / PAGE_SIZE));
+  const paged = actions;
 
   return (
     <div className="container px-4 py-8 md:px-6">
@@ -59,7 +54,13 @@ export default function ModActionLogPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {paged.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                    Загрузка лога...
+                  </td>
+                </tr>
+              ) : paged.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-muted-foreground">
                     Лог действий пуст.
