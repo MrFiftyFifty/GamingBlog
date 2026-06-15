@@ -1,8 +1,12 @@
-Django>=5.1
+Django>=4.2,<5.0
 djangorestframework
 djangorestframework-simplejwt
-django-filter
-django-cors-headers
-django-environ
 psycopg2-binary
 Pillow
+python-dotenv
+django-filter
+drf-spectacular
+django-allauth
+django-cors-headers
+requests
+cryptography

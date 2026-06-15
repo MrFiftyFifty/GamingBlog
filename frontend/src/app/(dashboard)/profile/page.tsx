@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/lib/zod-resolver";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,11 +19,24 @@ export default function ProfilePage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: { status: "" },
   });
+
+  useEffect(() => {
+    userApi
+      .getMyProfile()
+      .then((profile) => {
+        reset({ status: profile.status });
+        if (profile.avatar) {
+          setAvatarPreview(profile.avatar);
+        }
+      })
+      .catch(() => undefined);
+  }, [reset]);
 
   async function onSubmit(data: ProfileFormData) {
     try {

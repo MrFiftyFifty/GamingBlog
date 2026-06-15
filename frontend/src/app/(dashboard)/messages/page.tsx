@@ -1,31 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/lib/zod-resolver";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { messageSchema, type MessageFormData } from "@/lib/validations/user";
 import * as messagesApi from "@/lib/api/messages";
+import { useConversations, useMessages } from "@/hooks/use-messages";
 import { cn } from "@/lib/utils";
-
-const MOCK_CONVERSATIONS = [
-  { id: "1", participant: { username: "ProGamer42", avatar: null }, lastMessage: "Привет! Играем сегодня?", lastMessageAt: "15 мар", unreadCount: 2 },
-  { id: "2", participant: { username: "RPGLover", avatar: null }, lastMessage: "Спасибо за гайд!", lastMessageAt: "14 мар", unreadCount: 0 },
-];
-
-const MOCK_MESSAGES = [
-  { id: "1", conversationId: "1", sender: "ProGamer42", content: "Привет! Играем сегодня?", createdAt: "15 мар 14:30", read: true },
-  { id: "2", conversationId: "1", sender: "me", content: "Привет! Да, давай в 20:00", createdAt: "15 мар 14:35", read: true },
-  { id: "3", conversationId: "1", sender: "ProGamer42", content: "Отлично! Зову еще ребят", createdAt: "15 мар 14:40", read: false },
-];
 
 export default function MessagesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newMessageOpen, setNewMessageOpen] = useState(false);
   const [reply, setReply] = useState("");
+
+  const {
+    data: conversations = [],
+    isLoading: loadingConversations,
+    mutate: refreshConversations,
+  } = useConversations();
+
+  const {
+    data: messagesData,
+    isLoading: loadingMessages,
+    mutate: refreshMessages,
+  } = useMessages(selectedId);
+
+  const messages = messagesData?.data ?? [];
+  const selectedConversation = conversations.find((c) => c.id === selectedId);
 
   const {
     register,
@@ -36,11 +41,11 @@ export default function MessagesPage() {
     resolver: zodResolver(messageSchema),
   });
 
-  const messages = selectedId
-    ? MOCK_MESSAGES.filter((m) => m.conversationId === selectedId)
-    : [];
-
-  const selectedConversation = MOCK_CONVERSATIONS.find((c) => c.id === selectedId);
+  useEffect(() => {
+    if (selectedId) {
+      messagesApi.markConversationRead(selectedId).catch(() => undefined);
+    }
+  }, [selectedId]);
 
   async function onNewMessage(data: MessageFormData) {
     try {
@@ -48,6 +53,7 @@ export default function MessagesPage() {
       toast.success("Сообщение отправлено");
       reset();
       setNewMessageOpen(false);
+      await refreshConversations();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Произошла ошибка");
     }
@@ -55,13 +61,14 @@ export default function MessagesPage() {
 
   async function handleReply(e: React.FormEvent) {
     e.preventDefault();
-    if (!reply.trim() || !selectedId) return;
+    if (!reply.trim() || !selectedId || !selectedConversation) return;
     try {
       await messagesApi.sendMessage({
-        recipientUsername: selectedConversation?.participant.username ?? "",
+        recipientUsername: selectedConversation.participant.username,
         content: reply,
       });
       setReply("");
+      await Promise.all([refreshMessages(), refreshConversations()]);
     } catch {
       toast.error("Не удалось отправить сообщение");
     }
@@ -70,18 +77,22 @@ export default function MessagesPage() {
   return (
     <div className="w-full">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-fluid-display font-bold tracking-tight text-foreground">Личные сообщения</h1>
+        <h1 className="font-display text-fluid-display font-bold tracking-tight text-foreground">
+          Личные сообщения
+        </h1>
         <Button variant="outline" size="sm" onClick={() => setNewMessageOpen(true)}>
           Новое сообщение
         </Button>
       </div>
       <div className="rounded-lg border border-border bg-card min-h-[500px] flex flex-col md:flex-row">
         <aside className="w-full md:w-72 border-b md:border-b-0 md:border-r border-border overflow-y-auto">
-          {MOCK_CONVERSATIONS.length === 0 ? (
+          {loadingConversations ? (
+            <p className="p-4 text-sm text-muted-foreground">Загрузка диалогов...</p>
+          ) : conversations.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">Нет диалогов.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {MOCK_CONVERSATIONS.map((conv) => (
+              {conversations.map((conv) => (
                 <li key={conv.id}>
                   <button
                     type="button"
@@ -92,11 +103,13 @@ export default function MessagesPage() {
                     )}
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                      {conv.participant.username[0].toUpperCase()}
+                      {conv.participant.username[0]?.toUpperCase() ?? "?"}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground truncate">{conv.participant.username}</span>
+                        <span className="text-sm font-medium text-foreground truncate">
+                          {conv.participant.username}
+                        </span>
                         <span className="text-xs text-muted-foreground">{conv.lastMessageAt}</span>
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
@@ -116,25 +129,38 @@ export default function MessagesPage() {
           {selectedConversation ? (
             <>
               <div className="border-b border-border px-4 py-3">
-                <p className="text-sm font-medium text-foreground">{selectedConversation.participant.username}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {selectedConversation.participant.username}
+                </p>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      "max-w-[80%] rounded-lg px-4 py-2",
-                      msg.sender === "me"
-                        ? "ml-auto bg-accent-signature text-accent-signature-foreground"
-                        : "bg-muted"
-                    )}
-                  >
-                    <p className="text-sm">{msg.content}</p>
-                    <p className={cn("mt-1 text-xs", msg.sender === "me" ? "text-accent-signature-foreground/70" : "text-muted-foreground")}>
-                      {msg.createdAt}
-                    </p>
-                  </div>
-                ))}
+                {loadingMessages ? (
+                  <p className="text-sm text-muted-foreground">Загрузка сообщений...</p>
+                ) : (
+                  messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={cn(
+                        "max-w-[80%] rounded-lg px-4 py-2",
+                        msg.sender === "me"
+                          ? "ml-auto bg-accent-signature text-accent-signature-foreground"
+                          : "bg-muted"
+                      )}
+                    >
+                      <p className="text-sm">{msg.content}</p>
+                      <p
+                        className={cn(
+                          "mt-1 text-xs",
+                          msg.sender === "me"
+                            ? "text-accent-signature-foreground/70"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {msg.createdAt}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
               <form onSubmit={handleReply} className="border-t border-border p-4 flex gap-2">
                 <Input
@@ -143,7 +169,9 @@ export default function MessagesPage() {
                   placeholder="Написать сообщение..."
                   className="flex-1"
                 />
-                <Button type="submit" disabled={!reply.trim()}>Отправить</Button>
+                <Button type="submit" disabled={!reply.trim()}>
+                  Отправить
+                </Button>
               </form>
             </>
           ) : (
@@ -176,7 +204,9 @@ export default function MessagesPage() {
             )}
           </div>
           <div className="flex gap-3 justify-end">
-            <Button type="button" variant="outline" onClick={() => setNewMessageOpen(false)}>Отмена</Button>
+            <Button type="button" variant="outline" onClick={() => setNewMessageOpen(false)}>
+              Отмена
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Отправка..." : "Отправить"}
             </Button>

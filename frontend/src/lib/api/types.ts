@@ -130,11 +130,15 @@ export interface ModAction {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+  data?: T[];
+  results?: T[];
+  total?: number;
+  count?: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+  next?: string | null;
+  previous?: string | null;
 }
 
 export interface SearchResult {

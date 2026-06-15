@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/lib/zod-resolver";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,51 +17,11 @@ import {
   type WarnUserFormData,
 } from "@/lib/validations/moderation";
 import * as modApi from "@/lib/api/moderation";
+import type { Complaint } from "@/lib/api/types";
+import { useComplaints } from "@/hooks/use-moderation";
 import { cn } from "@/lib/utils";
 
 type TabValue = "pending" | "resolved";
-
-const MOCK_COMPLAINTS = [
-  {
-    id: "1",
-    postId: "p1",
-    topicId: "1",
-    topicTitle: "Marathon — первый взгляд",
-    sectionSlug: "rpg",
-    reportedContent: "Это сообщение содержит оскорбления в адрес других пользователей...",
-    reportedUser: "BadUser123",
-    reporter: "ProGamer42",
-    reason: "Оскорбления",
-    status: "pending" as const,
-    createdAt: "15 мар, 14:30",
-  },
-  {
-    id: "2",
-    postId: "p2",
-    topicId: "2",
-    topicTitle: "Crimson Desert — дата выхода",
-    sectionSlug: "rpg",
-    reportedContent: "Очередной спам с рекламой сторонних сайтов...",
-    reportedUser: "SpamBot99",
-    reporter: "RPGLover",
-    reason: "Спам",
-    status: "pending" as const,
-    createdAt: "14 мар, 20:15",
-  },
-  {
-    id: "3",
-    postId: "p3",
-    topicId: "3",
-    topicTitle: "GTA VI - теории",
-    sectionSlug: "action",
-    reportedContent: "Сообщение было удалено модератором.",
-    reportedUser: "TrollAccount",
-    reporter: "ActionHero",
-    reason: "Нарушение правил",
-    status: "resolved" as const,
-    createdAt: "13 мар, 10:00",
-  },
-];
 
 const ACTION_LABELS: Record<string, string> = {
   dismiss: "Отклонить",
@@ -73,14 +33,15 @@ const ACTION_LABELS: Record<string, string> = {
 export default function ModerationPage() {
   const [tab, setTab] = useState<TabValue>("pending");
   const [page, setPage] = useState(1);
-  const [resolveTarget, setResolveTarget] = useState<typeof MOCK_COMPLAINTS[0] | null>(null);
-  const [banTarget, setBanTarget] = useState<string | null>(null);
+  const [resolveTarget, setResolveTarget] = useState<Complaint | null>(null);
+  const [banTarget, setBanTarget] = useState<Complaint | null>(null);
   const [warnTarget, setWarnTarget] = useState<string | null>(null);
 
-  const filtered = MOCK_COMPLAINTS.filter((c) => c.status === tab);
+  const { data, isLoading, mutate } = useComplaints(tab, page);
   const PAGE_SIZE = 10;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const complaints = data?.results ?? [];
+  const totalPages = Math.max(1, Math.ceil((data?.count ?? complaints.length) / PAGE_SIZE));
+  const paged = complaints;
 
   const {
     register: registerResolve,
@@ -112,10 +73,15 @@ export default function ModerationPage() {
   async function onResolve(data: ResolveComplaintFormData) {
     if (!resolveTarget) return;
     try {
-      await modApi.resolveComplaint(resolveTarget.id, data.action, data.reason);
+      await modApi.resolveComplaint(resolveTarget.id, data.action, data.reason, {
+        postId: resolveTarget.postId,
+        topicId: resolveTarget.topicId,
+        reportedUser: resolveTarget.reportedUser,
+      });
       toast.success("Жалоба обработана");
       resetResolve();
       setResolveTarget(null);
+      await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Произошла ошибка");
     }
@@ -124,10 +90,15 @@ export default function ModerationPage() {
   async function onBan(data: BanUserFormData) {
     if (!banTarget) return;
     try {
-      await modApi.banUser(banTarget, data.reason, data.duration);
-      toast.success(`Пользователь ${banTarget} заблокирован`);
+      await modApi.banUser(
+        banTarget.reportedUser,
+        data.reason,
+        banTarget.topicId || undefined
+      );
+      toast.success(`Пользователь ${banTarget.reportedUser} заблокирован`);
       resetBan();
       setBanTarget(null);
+      await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Произошла ошибка");
     }
@@ -140,6 +111,7 @@ export default function ModerationPage() {
       toast.success(`Предупреждение отправлено пользователю ${warnTarget}`);
       resetWarn();
       setWarnTarget(null);
+      await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Произошла ошибка");
     }
@@ -174,10 +146,12 @@ export default function ModerationPage() {
         <div className="border-b border-border px-4 py-3 md:px-6">
           <h2 className="font-display text-fluid-title font-semibold">Очередь жалоб</h2>
           <p className="text-sm text-muted-foreground">
-            {filtered.length} {tab === "pending" ? "необработанных" : "обработанных"} жалоб
+            {data?.count ?? complaints.length} {tab === "pending" ? "необработанных" : "обработанных"} жалоб
           </p>
         </div>
-        {paged.length === 0 ? (
+        {isLoading ? (
+          <div className="p-8 text-center text-muted-foreground">Загрузка жалоб...</div>
+        ) : paged.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
             {tab === "pending" ? "Нет необработанных жалоб." : "Нет обработанных жалоб."}
           </div>
@@ -219,7 +193,7 @@ export default function ModerationPage() {
                         size="sm"
                         variant="outline"
                         className="border-destructive text-destructive hover:bg-destructive/10"
-                        onClick={() => setBanTarget(complaint.reportedUser)}
+                        onClick={() => setBanTarget(complaint)}
                       >
                         Заблокировать
                       </Button>
@@ -285,7 +259,7 @@ export default function ModerationPage() {
       <Modal
         open={!!banTarget}
         onClose={() => { setBanTarget(null); resetBan(); }}
-        title={`Заблокировать ${banTarget ?? ""}`}
+        title={`Заблокировать ${banTarget?.reportedUser ?? ""}`}
       >
         <form onSubmit={handleBan(onBan)} className="space-y-4">
           <div>

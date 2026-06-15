@@ -39,6 +39,9 @@ export function changePassword(currentPassword: string, newPassword: string) {
   }
   return apiFetch<void>("/api/auth/change-password/", {
     method: "POST",
-    body: JSON.stringify({ currentPassword, newPassword }),
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
   });
 }
