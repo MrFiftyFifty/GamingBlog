@@ -125,7 +125,11 @@ Workflow: `.github/workflows/deploy.yml` (по образцу [ark-task](https:/
 
 **Один раз в репозитории:** Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 
-После push в `main` или `integration` сайт будет доступен по адресу:
+**Деплой на Pages** срабатывает при push в **`main`** (ветка `integration` только собирает артефакт, без публикации). Либо вручную: Actions → Deploy to GitHub Pages → Run workflow.
+
+Если нужен деплой именно с `integration`: Settings → Environments → **github-pages** → Deployment branches → добавить `integration`.
+
+После успешного deploy сайт:
 
 **https://mrfiftyfifty.github.io/GamingBlog/**
 

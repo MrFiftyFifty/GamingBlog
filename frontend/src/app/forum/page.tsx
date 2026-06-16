@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { assetPath } from "@/lib/asset-path";
 import { SECTIONS } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default function ForumListPage() {
             >
               <div className="relative hidden w-40 shrink-0 overflow-hidden bg-muted sm:block sm:w-48 md:w-56">
                 <Image
-                  src={section.imageSrc}
+                  src={assetPath(section.imageSrc)}
                   alt={section.imageAlt}
                   fill
                   className="object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.05]"
