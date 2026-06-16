@@ -1,6 +1,10 @@
 const repoName = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "GamingBlog";
 const isGithubPages = process.env.GITHUB_PAGES === "true";
 
+if (isGithubPages) {
+  process.env.NEXT_PUBLIC_BASE_PATH = `/${repoName}`;
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   ...(isGithubPages

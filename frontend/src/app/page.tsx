@@ -6,6 +6,7 @@ import { FeaturedCard } from "@/components/home/FeaturedCard";
 import { NewsCard } from "@/components/home/NewsCard";
 import { ScrollReveal } from "@/components/providers/ScrollReveal";
 import { FEATURED, NEWS_ITEMS, ACTIVE_DISCUSSIONS } from "@/lib/mock-data";
+import { assetPath } from "@/lib/asset-path";
 
 export const metadata: Metadata = {
   title: "Игровой форум — обсуждение компьютерных игр",
@@ -18,7 +19,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <Image
-            src="/images/home/featured.jpg"
+            src={assetPath("/images/home/featured.jpg")}
             alt=""
             fill
             className="object-cover opacity-[0.08] dark:opacity-[0.15]"
