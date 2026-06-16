@@ -33,18 +33,22 @@ export const FONT_SIZES: { value: FontSize; label: string; scale: number }[] = [
   { value: "lg", label: "Крупный", scale: 1.125 },
 ];
 
+const hasApi =
+  typeof process !== "undefined" &&
+  Boolean(process.env.NEXT_PUBLIC_API_URL?.trim());
+
 export const FEATURES = {
-  forum: true,
-  messages: true,
-  moderation: true,
-  search: true,
-  userProfilesByUsername: true,
-  userSettings: true,
-  avatarUpload: true,
-  passwordReset: true,
-  changePassword: true,
-  notificationsUnreadCount: true,
-  notificationsMarkRead: true,
+  forum: hasApi,
+  messages: hasApi,
+  moderation: hasApi,
+  search: hasApi,
+  userProfilesByUsername: hasApi,
+  userSettings: hasApi,
+  avatarUpload: hasApi,
+  passwordReset: hasApi,
+  changePassword: hasApi,
+  notificationsUnreadCount: hasApi,
+  notificationsMarkRead: hasApi,
   topicPin: false,
   topicClose: false,
   postReport: true,
