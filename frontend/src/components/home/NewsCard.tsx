@@ -1,3 +1,4 @@
+import { assetPath } from "@/lib/asset-path";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,7 +26,7 @@ export function NewsCard({
     >
       <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-muted">
         <Image
-          src={imageSrc}
+          src={assetPath(imageSrc)}
           alt={imageAlt}
           fill
           className="object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.05]"

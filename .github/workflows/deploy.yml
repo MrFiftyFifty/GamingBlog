@@ -39,6 +39,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
           NEXT_PUBLIC_API_URL: ""
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
           NEXTAUTH_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
           NEXTAUTH_SECRET: github-pages-static-build
           NEXT_PUBLIC_GOOGLE_OAUTH: "false"
@@ -53,6 +54,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

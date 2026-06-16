@@ -3,6 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
+import { assetPath } from "@/lib/asset-path";
 import { cn } from "@/lib/utils";
 
 interface MarkdownContentProps {
@@ -44,7 +45,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
           img: ({ alt, src, ...props }) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={src}
+              src={typeof src === "string" ? assetPath(src) : src}
               alt={alt ?? ""}
               loading="lazy"
               className="rounded-lg max-w-full h-auto"
